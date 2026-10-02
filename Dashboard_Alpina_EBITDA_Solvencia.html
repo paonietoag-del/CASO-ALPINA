@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alpina | Tablero de eficiencia operativa y solvencia</title>
+<style>
+:root{
+  --azul:#0033A1; --azul2:#1F5FC4; --celeste:#8DB9EA; --hielo:#EAF2FC; --marino:#06205E;
+  --ink:#0B1F44; --muted:#56657F; --line:#D6E0EE; --bg:#F3F7FC; --paper:#FFFFFF;
+  --verde:#2E8540; --ambar:#E0A100; --rojo:#C8102E; --gris:#8A99B2;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:110px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,system-ui,sans-serif;font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
+.wrap{max-width:1380px;margin:0 auto;padding:0 20px}
+
+/* Header */
+header.top{background:var(--azul);color:#fff;position:relative;overflow:hidden}
+header.top::after{content:"";position:absolute;right:-120px;top:-160px;width:520px;height:520px;border-radius:50%;background:rgba(255,255,255,.06)}
+header.top .wrap{padding-top:24px;padding-bottom:22px;position:relative;z-index:1}
+.co{font-size:13px;margin:0 0 4px;color:#CFE0F7}
+h1{font-size:clamp(23px,3vw,34px);line-height:1.15;margin:0;font-weight:800;letter-spacing:-.01em}
+.sub{font-size:13.5px;margin:8px 0 0;color:#CFE0F7;max-width:80ch}
+
+/* Sticky control bar */
+.bar{position:sticky;top:0;z-index:30;background:var(--paper);border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(6,32,94,.06)}
+.bar .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto}
+nav.tabs button{background:transparent;border:0;padding:9px 14px;font-weight:700;font-size:14px;border-radius:8px;color:var(--muted);white-space:nowrap}
+nav.tabs button[aria-selected="true"]{background:var(--hielo);color:var(--azul)}
+.ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ctrl .lab{font-size:12.5px;color:var(--muted);font-weight:600}
+.seg{display:inline-flex;background:var(--hielo);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{background:transparent;border:0;border-radius:8px;padding:6px 11px;font-weight:700;font-size:13.5px;color:var(--azul)}
+.seg button[aria-pressed="true"]{background:var(--azul);color:#fff}
+.seg button:hover:not([aria-pressed="true"]){background:#D7E6F8}
+.btn{border:1.5px solid var(--azul);background:var(--azul);color:#fff;border-radius:8px;padding:7px 13px;font-weight:700;font-size:13.5px}
+.btn.ghost{background:#fff;color:var(--azul)}
+.btn:hover{filter:brightness(1.08)}
+
+/* Notices */
+.notice{display:flex;gap:12px;align-items:flex-start;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--ambar);border-radius:10px;padding:12px 14px;margin:16px 0 0;font-size:14px}
+.notice[hidden]{display:none}
+.help{border-left-color:var(--azul)}
+.help ol{margin:4px 0 0;padding-left:18px}
+.help .close{margin-left:auto;background:none;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:13px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--azul);border-radius:12px;padding:13px 15px 11px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.kpi:hover{box-shadow:0 4px 14px rgba(6,32,94,.10)}
+.kpi .kname{font-size:13px;color:var(--muted);font-weight:700}
+.kpi .kval{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1;color:var(--marino)}
+.kpi .kdelta{font-size:13px;font-weight:700}
+.kpi .kfoot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px;color:var(--muted);gap:8px}
+.light{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px}
+.light::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.ok{color:var(--verde)} .warn{color:#B07E00} .bad{color:var(--rojo)} .na{color:var(--muted)}
+.up{color:var(--verde)} .down{color:var(--rojo)}
+
+/* Panels */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px;padding-bottom:10px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px 14px;display:flex;flex-direction:column;min-width:0}
+.s8{grid-column:span 8}.s4{grid-column:span 4}.s6{grid-column:span 6}
+.phead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.phead h2{font-size:17px;margin:0;font-weight:800;line-height:1.25;color:var(--marino)}
+.phead .q{font-size:13px;color:var(--muted);margin:3px 0 0}
+.ctype{font-size:12px;color:var(--azul);background:var(--hielo);border-radius:999px;padding:3px 10px;white-space:nowrap;font-weight:700}
+.modes{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0 4px;padding:8px;background:var(--hielo);border-radius:10px}
+.modes .ml{font-size:12.5px;font-weight:700;color:var(--azul);margin-right:2px}
+.modes button{border:1.5px solid var(--azul);background:#fff;color:var(--azul);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700}
+.modes button[aria-pressed="true"]{background:var(--azul);color:#fff}
+.modes button:hover:not([aria-pressed="true"]){background:#DCE9F9}
+.modes label{font-size:13px;display:inline-flex;align-items:center;gap:6px;margin-left:6px;color:var(--azul);font-weight:700;cursor:pointer}
+.modes input{accent-color:var(--azul);width:16px;height:16px}
+.cbox{position:relative}
+.chart{height:330px;width:100%;touch-action:manipulation}
+.chart.tall{height:360px}
+.chart svg{display:block;width:100%;height:100%;overflow:visible}
+.lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;margin-top:6px}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+.lg i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.lg i.ln{height:3px;border-radius:2px;width:16px}
+.read{font-size:13.5px;margin:10px 0 0;padding-top:10px;border-top:1px dashed var(--line)}
+.empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:var(--paper);font-size:14px;color:var(--muted);padding:20px}
+.empty[hidden]{display:none}
+.empty button{border:1.5px solid var(--azul);background:#fff;color:var(--azul);border-radius:8px;padding:6px 12px;font-weight:700}
+
+/* SVG */
+.grid-l{stroke:var(--line);stroke-width:1}
+.axis{stroke:#AFC0D8;stroke-width:1}
+.ax{font-size:11px;fill:var(--muted)}
+.axt{font-size:11.5px;fill:var(--muted);font-weight:600}
+.xl{font-size:12px;fill:var(--ink);font-weight:600}
+.xl.sel{fill:var(--azul);font-weight:800}
+.vl{font-size:11px;font-weight:700;fill:var(--ink)}
+.vl.w{fill:#fff}
+.hit{cursor:pointer;transition:opacity .15s, transform .15s}
+rect.hit.hov,circle.hit.hov{opacity:.82;stroke:var(--marino);stroke-width:1.5}
+path.slice{transition:transform .18s}
+path.slice.hov{transform:translate(var(--dx),var(--dy))}
+.ref{stroke:var(--gris);stroke-dasharray:5 4;stroke-width:1}
+.qd{font-size:11px;fill:var(--gris);font-weight:600}
+@keyframes grow{from{opacity:0}to{opacity:1}}
+.chart svg{animation:grow .35s ease-out}
+
+/* Tooltip */
+#tip{position:fixed;z-index:100;pointer-events:none;background:var(--marino);color:#fff;border-radius:10px;padding:11px 13px;font-size:12.5px;max-width:320px;box-shadow:0 8px 24px rgba(6,32,94,.3);line-height:1.45}
+#tip[hidden]{display:none}
+#tip b{display:block;font-size:13.5px;margin-bottom:5px}
+#tip .tr{display:flex;justify-content:space-between;gap:16px}
+#tip .tr span:first-child{color:#BFD3F2}
+#tip .tr span:last-child{font-weight:700}
+#tip .tn{color:#BFD3F2;font-size:12px;margin-top:3px}
+#tip .tf{margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.2);color:#FFD66B;font-size:12px;font-weight:600}
+
+/* Sections */
+section.tab[hidden]{display:none}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:18px}
+.card h2{font-size:21px;margin:0 0 6px;color:var(--marino)}
+.card h3{font-size:16px;margin:22px 0 6px;color:var(--azul)}
+.card p{max-width:80ch;margin:8px 0}
+.lead{font-size:16px;color:var(--muted);max-width:78ch}
+.tscroll{overflow-x:auto;margin-top:12px;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:820px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:230px}
+thead th{background:var(--hielo);font-weight:800;color:var(--marino)}
+tr.sec td{background:var(--azul);color:#fff;font-weight:700;text-align:left}
+tr.key td{font-weight:700}
+td.focus,th.focus{background:rgba(31,95,196,.07)}
+td.nd{color:var(--muted)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.foot{font-size:12.5px;color:var(--muted);margin-top:10px}
+.ins{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px}
+.insc{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:#F8FBFF}
+.insc h3{margin:0 0 6px;font-size:15.5px}
+.insc p{margin:6px 0;font-size:14px}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:6px;padding:1px 8px;margin-bottom:6px}
+.tag.ok{background:rgba(46,133,64,.12)} .tag.warn{background:rgba(224,161,0,.16)} .tag.bad{background:rgba(200,16,46,.10)} .tag.na{background:rgba(86,101,127,.12)}
+.big3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.stat{border-left:5px solid var(--azul);padding:4px 0 4px 14px}
+.stat .n{font-size:28px;font-weight:800;color:var(--marino)}
+.stat .l{font-size:13px;color:var(--muted)}
+.mock{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;border:2px dashed var(--line);border-radius:12px;padding:10px;margin-top:12px;font-size:12px}
+.mock div{background:var(--hielo);border:1px solid var(--line);border-radius:6px;padding:8px;min-height:44px;display:flex;flex-direction:column;justify-content:center}
+.mock span{color:var(--muted)}
+.m12{grid-column:span 12}.m8{grid-column:span 8}.m4{grid-column:span 4}.m6{grid-column:span 6}
+.mk{grid-column:span 12;display:grid!important;grid-template-columns:repeat(5,1fr);gap:6px;background:transparent!important;border:0!important;padding:0!important}
+.mk > span{background:var(--azul);border-radius:6px;padding:8px;color:#fff!important}
+pre.dax{background:#F8FBFF;border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font-size:12.5px;line-height:1.55}
+ul.clean{padding-left:18px;max-width:82ch} ul.clean li{margin:6px 0}
+footer{font-size:12.5px;color:var(--muted);margin:28px 0 40px}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.s8,.s4,.s6{grid-column:span 12}.ins{grid-template-columns:1fr}}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}.big3{grid-template-columns:1fr}.chart,.chart.tall{height:300px}.kpi .kval{font-size:25px}.wrap{padding:0 12px}.ctrl .lab{display:none}.bar{position:static}.ctrl .ghost{display:none}.seg button{padding:6px 9px}}
+@media print{.bar,.help,.modes,.tools{display:none!important}section.tab{display:block!important}body{background:#fff}.panel,.card{break-inside:avoid}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <p class="co">Alpina Productos Alimenticios S.A.S. BIC, Colombia</p>
+    <h1>Tablero de eficiencia operativa y solvencia</h1>
+    <p class="sub">Estados financieros individuales anuales en millones de COP. Fuente: EMIS (ISI Markets). Indicadores calculados por el área financiera.</p>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="t-dash">Tablero de control</button>
+      <button role="tab" aria-selected="false" data-tab="t-table">1. Tabla resumen</button>
+      <button role="tab" aria-selected="false" data-tab="t-ins">2. Variaciones e insights</button>
+      <button role="tab" aria-selected="false" data-tab="t-mock">3. Diseño y conclusiones</button>
+    </nav>
+    <div class="ctrl">
+      <span class="lab">Año</span><div class="seg" id="yearSeg" role="group" aria-label="Año de análisis"></div>
+      <span class="lab">Tendencia</span><div class="seg" id="rangeSeg" role="group" aria-label="Periodo">
+        <button data-r="3" aria-pressed="true">3 años</button><button data-r="5" aria-pressed="false">5 años</button></div>
+      <button class="btn" id="dlBtn" title="Descargar este dashboard como archivo HTML">Descargar HTML</button>
+      <button class="btn ghost" onclick="window.print()">Imprimir / PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<section class="tab" id="t-dash">
+  <div class="notice help" id="helpBox">
+    <div>
+      <b>Cómo usar este tablero</b>
+      <ol>
+        <li>Elige el año en la barra superior (siempre visible): cambian las tarjetas, la torta, la dona, la cascada y el flujo de caja.</li>
+        <li>En cada gráfico, usa los botones de la franja azul "Cambiar vista" para ver otra información.</li>
+        <li>Pasa el cursor (o toca en el celular) sobre barras, porciones o burbujas para ver el detalle. Clic en una barra o burbuja anual para saltar a ese año.</li>
+      </ol>
+    </div>
+    <button class="close" id="helpClose">Entendido</button>
+  </div>
+  <div class="notice" id="dqBox" hidden></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <article class="panel s8" id="p-vbar">
+      <div class="phead"><div><h2>KPI 1. Margen EBITDA: ventas, EBITDA y utilidad</h2><p class="q">¿Cuánto vende Alpina y cuánto de eso convierte en EBITDA y en utilidad?</p></div><span class="ctype">Barras verticales</span></div>
+      <div class="modes" id="m-vbar"><span class="ml">Cambiar vista:</span>
+        <button data-m="ventas" aria-pressed="false">Ventas netas</button>
+        <button data-m="ebitda" aria-pressed="true">EBITDA</button>
+        <button data-m="un" aria-pressed="false">Utilidad neta</button>
+        <button data-m="comp" aria-pressed="false">EBITDA vs EBIT vs Utilidad</button>
+        <label><input type="checkbox" id="chkMargin" checked> Ver margen %</label>
+      </div>
+      <div class="cbox"><div class="chart tall" id="c-vbar"></div></div>
+      <div class="lg" id="l-vbar"></div>
+      <p class="read" id="r-vbar"></p>
+    </article>
+
+    <article class="panel s4" id="p-pie">
+      <div class="phead"><div><h2>¿A dónde va cada peso vendido?</h2><p class="q">Distribución de las ventas netas del año</p></div><span class="ctype">Torta</span></div>
+      <div class="modes" id="m-pie"><span class="ml">Cambiar vista:</span>
+        <button data-m="total" aria-pressed="true">Toda la venta</button>
+        <button data-m="opex" aria-pressed="false">Solo gastos operativos</button>
+      </div>
+      <div class="cbox"><div class="chart" id="c-pie"></div><div class="empty" id="e-pie" hidden></div></div>
+      <div class="lg" id="l-pie"></div>
+      <p class="read" id="r-pie"></p>
+    </article>
+
+    <article class="panel s8" id="p-wf">
+      <div class="phead"><div><h2>KPI 2. Margen neto: de las ventas a la utilidad</h2><p class="q">¿Qué rubros consumen el margen entre la venta y la utilidad neta?</p></div><span class="ctype">Cascada</span></div>
+      <div class="modes" id="m-wf"><span class="ml">Cambiar vista:</span>
+        <button data-m="pyg" aria-pressed="true">Estado de resultados del año</button>
+        <button data-m="bridge" aria-pressed="false">Puente de utilidad vs año anterior</button>
+      </div>
+      <div class="cbox"><div class="chart tall" id="c-wf"></div><div class="empty" id="e-wf" hidden></div></div>
+      <div class="lg" id="l-wf"></div>
+      <p class="read" id="r-wf"></p>
+    </article>
+
+    <article class="panel s4" id="p-donut">
+      <div class="phead"><div><h2>KPI 5. Endeudamiento: cómo se financia</h2><p class="q">Composición del balance del año</p></div><span class="ctype">Dona</span></div>
+      <div class="modes" id="m-donut"><span class="ml">Cambiar vista:</span>
+        <button data-m="fin" aria-pressed="true">Pasivo y patrimonio</button>
+        <button data-m="act" aria-pressed="false">Activos</button>
+      </div>
+      <div class="cbox"><div class="chart" id="c-donut"></div></div>
+      <div class="lg" id="l-donut"></div>
+      <p class="read" id="r-donut"></p>
+    </article>
+
+    <article class="panel s6" id="p-bub">
+      <div class="phead"><div><h2>KPI 3. Deuda neta / EBITDA: rentabilidad vs riesgo</h2><p class="q">Cada burbuja es un año; su tamaño indica el nivel relativo de ventas</p></div><span class="ctype">Burbujas</span></div>
+      <div class="modes" id="m-bub"><span class="ml">Cambiar vista:</span>
+        <button data-m="dn" aria-pressed="true">Margen EBITDA vs DN/EBITDA</button>
+        <button data-m="ebit" aria-pressed="false">Margen EBIT vs Endeudamiento</button>
+        <button data-m="roa" aria-pressed="false">ROA vs Liquidez</button>
+      </div>
+      <div class="cbox"><div class="chart" id="c-bub"></div></div>
+      <p class="read" id="r-bub"></p>
+    </article>
+
+    <article class="panel s6" id="p-hbar">
+      <div class="phead"><div><h2>KPI 4. Cobertura de intereses y uso de la caja</h2><p class="q">¿Alcanza la operación para pagar la deuda y remunerar al accionista?</p></div><span class="ctype">Barras horizontales</span></div>
+      <div class="modes" id="m-hbar"><span class="ml">Cambiar vista:</span>
+        <button data-m="cob" aria-pressed="true">Cobertura de intereses</button>
+        <button data-m="deuda" aria-pressed="false">Deuda financiera</button>
+        <button data-m="caja" aria-pressed="false">Fuentes y usos de caja</button>
+      </div>
+      <div class="cbox"><div class="chart" id="c-hbar"></div><div class="empty" id="e-hbar" hidden></div></div>
+      <div class="lg" id="l-hbar"></div>
+      <p class="read" id="r-hbar"></p>
+    </article>
+  </div>
+</section>
+
+<!-- ================= TABLE ================= -->
+<section class="tab" id="t-table" hidden>
+  <div class="card">
+    <h2>1. Tabla resumen de los datos extraídos de EMIS</h2>
+    <p class="lead">Cifras en millones de COP tomadas del archivo EMIS, más los indicadores calculados para el tablero. Las columnas sombreadas son los tres años bajo análisis (2023 a 2025).</p>
+    <div class="tools">
+      <div class="seg" id="tblSeg">
+        <button data-r="3" aria-pressed="true">3 años</button><button data-r="5" aria-pressed="false">5 años</button>
+      </div>
+      <button class="btn ghost" id="csvBtn">Descargar tabla en CSV</button>
+    </div>
+    <div class="tscroll"><table id="sumTable"></table></div>
+    <p class="foot">n.d.: dato no reportado en EMIS. (e): estimado por el analista. EBITDA 2023 = EBIT reportado + depreciación promedio 2021, 2024 y 2025 (89.374 M). 2023 proviene de la Cámara de Comercio de Bogotá y no está auditado; no trae detalle de gastos, de balance ni flujo de efectivo, y reporta impuesto de renta en cero. Deuda financiera = créditos y préstamos corrientes y no corrientes más bonos. Márgenes calculados sobre ventas netas. En costos y gastos, una variación positiva significa que el gasto aumentó.</p>
+  </div>
+</section>
+
+<!-- ================= INSIGHTS ================= -->
+<section class="tab" id="t-ins" hidden>
+  <div class="card">
+    <h2>2. Análisis de variaciones e insights</h2>
+    <p class="lead">Lectura de analista sobre la tendencia del EBITDA y del margen neto en 2023, 2024 y 2025, y sobre la eficiencia y la solvencia que revela el tablero.</p>
+    <div class="big3">
+      <div class="stat"><div class="n">+23,3 %</div><div class="l">Crecimiento anual compuesto del EBITDA 2023 a 2025 (con 2023 estimado)</div></div>
+      <div class="stat"><div class="n">4,3 % → 5,0 %</div><div class="l">Margen neto sobre ventas netas, 2023 a 2025 (+0,7 pp)</div></div>
+      <div class="stat"><div class="n">2,65x → 1,76x</div><div class="l">Deuda neta / EBITDA entre 2024 y 2025</div></div>
+    </div>
+
+    <h3>Tendencia del EBITDA</h3>
+    <p>El EBITDA pasó de unos 226.690 M estimados en 2023 a 293.552 M en 2024 (+29,5 %) y a 344.554 M en 2025 (+17,4 %). El margen EBITDA subió de 10,4 % a 14,0 % y luego a 15,1 %, un nivel alto para un procesador de lácteos. La mejora no viene del volumen: las ventas netas cayeron 3,8 % en 2024 y crecieron 8,8 % en 2025, apenas 2,3 % anual compuesto en el periodo. Viene de margen bruto (40,0 % → 41,9 % → 42,6 %) y de apalancamiento operativo: en 2025 los gastos operativos crecieron 5,9 % frente a ventas que crecieron 8,8 %, y su peso bajó de 32,4 % a 31,5 % de la venta.</p>
+    <p>Contra la guía que la compañía dio a mitad de año, que apuntaba a unos 364.000 M de EBITDA y cerca de 114.000 M de utilidad (Valora Analitik), el EBITDA individual reportado quedó 5,3 % por debajo y la utilidad neta en línea. Conviene confirmar si la guía se refería a cifras consolidadas.</p>
+
+    <h3>Tendencia del margen neto</h3>
+    <p>El margen neto subió de 4,3 % a 4,8 % y a 5,0 %, mucho menos que el EBITDA. En 2025 separan ambos márgenes unos 10,1 pp: depreciación 4,0 pp, resultado financiero neto 3,2 pp e impuestos 2,9 pp (tasa efectiva de 36,5 %). La utilidad de 2024 estuvo inflada por 70.087 M de participación en asociadas, que cayó 80,7 % en 2025 a 13.503 M. Sin ese rubro, la utilidad antes de impuestos casi se duplicó (90.386 M → 166.574 M, +84 %). La calidad de la utilidad de 2025 es claramente mejor que la de 2024.</p>
+
+    <div class="ins">
+      <div class="insc"><span class="tag ok">Positivo</span><h3>Eficiencia operativa en máximos del periodo</h3><p>Margen bruto de 42,6 % y margen EBIT de 11,1 % en 2025, los más altos de los cinco años. El EBIT creció 26,7 % con ventas creciendo 8,8 %.</p></div>
+      <div class="insc"><span class="tag ok">Positivo</span><h3>Desapalancamiento con caja propia</h3><p>La deuda financiera bajó 15,7 % (828.809 M → 698.820 M) y la neta 22,1 %. El flujo operativo se duplicó a 406.785 M y el flujo libre, después de capex, llegó a 372.771 M: pagó dividendos (77.437 M), intereses (68.107 M), arrendamientos (45.752 M) y amortizó deuda neta por 118.105 M.</p></div>
+      <div class="insc"><span class="tag warn">Vigilar</span><h3>Cobertura de intereses aún moderada</h3><p>EBITDA / gastos financieros de 3,8x en 2025, desde 2,6x en 2024. Mejora, pero sigue por debajo de 4x, zona que la mayoría de bancos considera cómoda. Los gastos financieros bajaron 18,8 %.</p></div>
+      <div class="insc"><span class="tag bad">Crítico</span><h3>Patrimonio delgado y alto endeudamiento contable</h3><p>El pasivo es el 87,8 % del activo y 7,2 veces el patrimonio. El patrimonio cayó de 238.554 M a 163.716 M pese a las utilidades, por dividendos y por la reducción de otros componentes del patrimonio (ligada a la baja de inversiones en subsidiarias, 521.040 M → 377.786 M). Esto también infla el ROE (69,9 %), que no debe leerse como señal de excelencia.</p></div>
+      <div class="insc"><span class="tag warn">Vigilar</span><h3>Liquidez y deuda de corto plazo</h3><p>Razón corriente de 0,84x y capital de trabajo negativo por 101.958 M. La deuda de corto plazo subió 59,5 % y pasó de 13,8 % a 26,0 % de la deuda financiera tras el refinanciamiento de 2025 (466.479 M tomados, 584.584 M pagados). El ciclo de caja es negativo (cerca de −6 días) porque proveedores financian unos 93 días.</p></div>
+      <div class="insc"><span class="tag na">Calidad del dato</span><h3>Advertencias para la junta</h3><p>2023 no está auditado, viene de otra fuente y omite EBITDA, detalle de gastos, balance y flujo de caja, además de reportar impuesto cero. En 2025 la cartera comercial crece 19,8 % en el balance mientras el flujo de caja muestra una liberación de cuentas por cobrar: vale pedir la conciliación (posible factoring o reclasificación).</p></div>
+    </div>
+
+    <h3>Variaciones clave</h3>
+    <div class="tscroll"><table id="varTable"></table></div>
+    <p class="foot">Variaciones relativas para cifras en millones (en costos y gastos, + significa que el gasto aumentó); en puntos porcentuales (pp) para márgenes y en veces (x) para múltiplos. Guía de la compañía: Valora Analitik, resultados del primer semestre de 2025.</p>
+  </div>
+</section>
+
+<!-- ================= MOCKUP ================= -->
+<section class="tab" id="t-mock" hidden>
+  <div class="card">
+    <h2>3. Diseño del tablero, mockup y conclusiones</h2>
+    <p class="lead">Estructura lógica pensada para replicarse en Power BI. Una sola página para la junta, con lectura de arriba hacia abajo: primero el semáforo, luego la eficiencia operativa y al final la solvencia.</p>
+
+    <h3>Mockup de la página</h3>
+    <div class="mock" aria-label="Esquema del tablero">
+      <div class="m8"><b>Encabezado</b><span>Empresa, título, fuente y fecha de corte</span></div>
+      <div class="m4"><b>Segmentadores</b><span>Año (botones) y periodo 3 / 5 años</span></div>
+      <div class="mk"><span><b>Margen EBITDA</b></span><span><b>Margen neto</b></span><span><b>Deuda neta / EBITDA</b></span><span><b>Cobertura de intereses</b></span><span><b>Pasivo / Activo</b></span></div>
+      <div class="m8"><b>Barras verticales</b><span>Ventas, EBITDA o utilidad por año con línea de margen</span></div>
+      <div class="m4"><b>Torta</b><span>A dónde va cada peso vendido</span></div>
+      <div class="m8"><b>Cascada</b><span>Ventas → utilidad neta, o puente año contra año</span></div>
+      <div class="m4"><b>Dona</b><span>Pasivo y patrimonio, o composición de activos</span></div>
+      <div class="m6"><b>Burbujas</b><span>Rentabilidad vs riesgo por año, tamaño = ventas</span></div>
+      <div class="m6"><b>Barras horizontales</b><span>Cobertura, deuda y fuentes y usos de caja</span></div>
+    </div>
+
+    <h3>Los 5 KPIs críticos y el gráfico ideal para cada uno</h3>
+    <div class="tscroll"><table>
+      <thead><tr><th>KPI</th><th style="text-align:left">Fórmula</th><th style="text-align:left">Gráfico</th><th style="text-align:left">Por qué ese gráfico</th><th style="text-align:left">Semáforo propuesto</th></tr></thead>
+      <tbody>
+        <tr><td><b>1. Margen EBITDA</b> (eficiencia)</td><td style="text-align:left">EBITDA / Ventas netas</td><td style="text-align:left">Barras verticales + línea de margen</td><td style="text-align:left;white-space:normal">Compara magnitudes en millones año a año y muestra la tendencia del margen en el mismo visual.</td><td style="text-align:left">≥14 % sano; 10–14 % vigilar; &lt;10 % crítico</td></tr>
+        <tr><td><b>2. Margen neto</b> (rentabilidad final)</td><td style="text-align:left">Utilidad neta / Ventas netas</td><td style="text-align:left">Cascada</td><td style="text-align:left;white-space:normal">Explica paso a paso qué rubros separan la venta de la utilidad y qué cambió frente al año anterior.</td><td style="text-align:left">≥5 % sano; 3–5 % vigilar; &lt;3 % crítico</td></tr>
+        <tr><td><b>3. Deuda neta / EBITDA</b> (solvencia)</td><td style="text-align:left">(Deuda CP + LP − Caja) / EBITDA</td><td style="text-align:left">Burbujas</td><td style="text-align:left;white-space:normal">Cruza rentabilidad y riesgo en un plano con cuadrantes; el tamaño agrega la escala de ventas.</td><td style="text-align:left">≤2,5x sano; 2,5–3,5x vigilar; &gt;3,5x crítico</td></tr>
+        <tr><td><b>4. Cobertura de intereses</b> (capacidad de pago)</td><td style="text-align:left">EBITDA / Gastos financieros</td><td style="text-align:left">Barras horizontales</td><td style="text-align:left;white-space:normal">Enfrenta en la misma línea lo que genera la operación y lo que cuesta la deuda; etiquetas largas se leen mejor en horizontal.</td><td style="text-align:left">≥4x sano; 2,5–4x vigilar; &lt;2,5x crítico</td></tr>
+        <tr><td><b>5. Endeudamiento</b> (estructura)</td><td style="text-align:left">Pasivo total / Activo total</td><td style="text-align:left">Dona</td><td style="text-align:left;white-space:normal">Muestra partes de un todo (el balance) con el total en el centro; pocas categorías, lectura inmediata.</td><td style="text-align:left">≤70 % sano; 70–85 % vigilar; &gt;85 % crítico</td></tr>
+        <tr><td>Apoyo: Estructura de costos</td><td style="text-align:left">Cada rubro / Ventas netas</td><td style="text-align:left">Torta con %</td><td style="text-align:left;white-space:normal">Traduce el estado de resultados a "de cada $100 vendidos"; soporta los KPIs 1 y 2.</td><td style="text-align:left">Informativo</td></tr>
+      </tbody></table></div>
+    <p class="foot">Los umbrales son referenciales para la industria de alimentos y deben calibrarse con los covenants de los créditos de Alpina y con su política financiera.</p>
+
+    <h3>Contenido de los tooltips</h3>
+    <ul class="clean">
+      <li><b>Barras verticales:</b> valor en millones, variación contra el año anterior, margen sobre ventas y rubros relacionados (D&amp;A y EBIT para el EBITDA; impuestos y tasa efectiva para la utilidad).</li>
+      <li><b>Torta:</b> valor en millones, porcentaje de las ventas, equivalente por cada $100 vendidos y cambio en puntos frente al año anterior.</li>
+      <li><b>Dona:</b> valor en millones, participación en el total y variación anual del rubro.</li>
+      <li><b>Cascada:</b> impacto del paso, peso sobre ventas y valor acumulado tras ese paso.</li>
+      <li><b>Burbujas:</b> año, ventas, las dos métricas del plano, utilidad neta, EBITDA y deuda neta.</li>
+      <li><b>Barras horizontales:</b> valores en millones y la razón de cobertura o de deuda neta a EBITDA del año.</li>
+    </ul>
+
+    <h3>Cómo construirlo en Power BI</h3>
+    <p><b>Modelo de datos.</b> Una tabla de hechos en formato largo (<i>FactEEFF</i>: Año, Estado, Rubro, Valor) obtenida despivotando las columnas por año del Excel de EMIS en Power Query; una dimensión <i>DimRubro</i> con orden, signo y agrupación (para la torta y la cascada) y una dimensión <i>DimAño</i>. <b>Visuales nativos:</b> gráfico de columnas agrupadas con línea, gráfico circular, gráfico de anillos, gráfico de dispersión con campo de tamaño (burbujas), gráfico de barras agrupadas y gráfico de cascada. <b>Botones:</b> los cambios de vista se replican con marcadores y selector de marcadores, o con parámetros de campo. <b>Tooltips:</b> páginas de información sobre herramientas con tarjetas y minitablas.</p>
+<pre class="dax">Ventas Netas     = CALCULATE ( SUM ( FactEEFF[Valor] ), DimRubro[Rubro] = "Ingresos netos por ventas" )
+EBITDA           = CALCULATE ( SUM ( FactEEFF[Valor] ), DimRubro[Rubro] = "EBITDA" )
+Margen EBITDA    = DIVIDE ( [EBITDA], [Ventas Netas] )
+Margen Neto      = DIVIDE ( [Utilidad Neta], [Ventas Netas] )
+Deuda Financiera = [Créditos CP] + [Créditos LP] + [Bonos]
+Deuda Neta       = [Deuda Financiera] - [Efectivo]
+DN / EBITDA      = DIVIDE ( [Deuda Neta], [EBITDA] )
+Cobertura        = DIVIDE ( [EBITDA], ABS ( [Gastos Financieros] ) )
+Endeudamiento    = DIVIDE ( [Pasivos Totales], [Activos Totales] )
+Var YoY %        = VAR a = MAX ( DimAño[Año] )
+                   VAR prev = CALCULATE ( [Ventas Netas], DimAño[Año] = a - 1 )
+                   RETURN DIVIDE ( [Ventas Netas] - prev, prev )
+Semáforo EBITDA  = SWITCH ( TRUE (), [Margen EBITDA] &gt;= 0.14, "#2E8540",
+                            [Margen EBITDA] &gt;= 0.10, "#E0A100", "#C8102E" )</pre>
+
+    <h3>Conclusiones y puntos de vista clave</h3>
+    <ul class="clean">
+      <li><b>La historia de 2023 a 2025 es de eficiencia, no de crecimiento.</b> Con ventas casi planas en términos reales, Alpina ganó cerca de 4,7 pp de margen EBITDA gracias a mejor margen bruto y control de gastos.</li>
+      <li><b>El margen neto sube, pero despacio.</b> Depreciación, costo financiero e impuestos consumen dos tercios del EBITDA. La siguiente palanca está debajo del EBIT: tasa de interés y estructura tributaria.</li>
+      <li><b>La solvencia medida por flujo mejoró mucho</b> (deuda neta / EBITDA de 1,76x), <b>pero la medida por balance es frágil</b> (pasivo de 87,8 % del activo, patrimonio en descenso). La política de dividendos debería atarse a recomponer patrimonio.</li>
+      <li><b>El riesgo a vigilar es de liquidez de corto plazo:</b> más deuda corriente, razón corriente menor a 1 y dependencia del crédito de proveedores.</li>
+      <li><b>Para la junta:</b> pedir estados auditados de 2023, la conciliación de cartera de 2025, el perfil de vencimientos de la deuda refinanciada y las cifras consolidadas para compararlas con la guía pública.</li>
+    </ul>
+  </div>
+</section>
+
+
+<footer>Fuente de datos: EMIS / ISI Markets, estados financieros individuales de Alpina Productos Alimenticios S.A.S. BIC (Superintendencia de Sociedades y Superfinanciera, NIIF; 2023 de la Cámara de Comercio de Bogotá, no auditado). Indicadores calculados por el analista. Archivo autocontenido: funciona sin conexión a internet.</footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const SRC = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+const DATA = {"Y": [2021, 2022, 2023, 2024, 2025], "d": {"ing_total": [1760903.52, 2151432.21, 2180243.23, 2106374.32, 2295087.85], "ventas": [1752726.79, 2143415.78, 2180243.23, 2098376.57, 2282389.05], "cogs": [1033711.13, 1279895.62, 1307458.35, 1219179.95, 1309480.28], "bruta": [719015.66, 863520.16, 872784.88, 879196.62, 972908.77], "g_venta": [39631.02, 41930.04, null, 38941.73, 41398.76], "g_admin": [518865.03, 581040.57, null, 614398.36, 656211.19], "otros_net": [8263.7, 8267.58, null, 25546.08, 21524.26], "ebit": [152255.91, 232281.97, 137316.05, 200310.45, 253774.57], "ebitda": [236357.61, null, null, 293552.23, 344554.38], "da": [84101.71, null, null, 93241.78, 90779.81], "res_fin": [-29098.89, -79152.45, -43687.84999999999, -39837.33, -73698.14], "ing_fin": [2551.31, 3826.21, null, 1271.99, 3109.05], "gas_fin": [49594.05, 96203.6, null, 111196.39, 90310.06], "asoc": [17943.85, 13224.94, null, 70087.07, 13502.88], "ebt": [123157.02, 153129.51, 93628.2, 160473.12, 180076.43], "imp": [35663.04, 52715.66, 0, 59951.95, 65709.05], "un": [87493.98, 100413.86, 93628.2, 100521.17, 114367.38], "activo": [1453044.58, 1581896.35, 1536664.37, 1431184.17, 1344661.18], "act_nc": [1090902.36, 1184822.88, null, 999404.43, 824790.22], "ppe": [521454.29, 476883.01, null, 438996.6, 402482.1], "intang": [84520.75, 87980.6, null, 24042.2, 10729.35], "inv_sub": [465349.92, 604436.63, null, 521040.28, 377786.13], "act_c": [362142.22, 397073.47, 438638.31, 431779.74, 519870.97], "invent": [149970.48, 212479.95, null, 167986.71, 182198.13], "cxc": [150876.2, 152286.98, null, 206506.9, 241251.56], "cxc_com": [117489.41, 116223.47, null, 192702.52, 230898.44], "caja": [45290.46, 16083.5, null, 49548.6, 91990.16], "patrimonio": [239404.63, 244033.26, 238553.7, 175759.39, 163715.78], "pasivo": [1213639.95, 1337863.09, 1298110.67, 1255424.78, 1180945.41], "pas_nc": [818078.21, 732186.66, 811436.66, 747174.7, 559116.34], "pas_c": [395561.75, 605676.43, 486674.01, 508250.07, 621829.07], "deuda_lp": [682822.94, 607587.81, null, 714674.61, 516792.69], "deuda_cp": [19981.36, 75807.35, null, 114134.67, 182027.72], "proveed": [281468.46, 433656.62, null, 303505.81, 334500.56], "cfo": [219870.63, null, null, 197344.21, 406785.34], "capex": [16550.04, null, null, 28695.0, 34013.97], "cfi": [-326658.31, null, null, -18742.91, -30533.75], "cff": [110608.35, null, null, -162300.19, -288187.23], "prest_in": [0, null, null, 33614.47, 466478.94], "prest_out": [0, null, null, 64130.34, 584583.53], "arrend": [38266.05, null, null, 40945.27, 45752.42], "int_pag": [10281.78, null, null, 54604.82, 68106.54], "divid": [73797.55, null, null, 53691.97, 77436.59], "adq": [314050.29, null, null, 0, 0], "var_caja": [3820.67, null, null, 16301.11, 88064.36], "opex_total": [566759.75, 631238.1900000001, 735468.8300000001, 678886.1699999999, 719134.2]}, "ratios": {"2021": {"m_bruto": 0.4102268899535677, "m_ebitda": 0.1348513706463059, "m_ebit": 0.08686802236873438, "m_neto": 0.04991877827119878, "deuda_tot": 702804.2999999999, "deuda_neta": 657513.84, "dn_ebitda": 2.781860249813831, "endeud": 0.8352393083493693, "pas_pat": 5.0694088497787195, "rc": 0.9155137472215147, "cobert": 4.765846104522619, "cob_ebit": 3.070043886312975, "roa": 0.060214243392312156, "roe": 0.3654648617280292, "tasa_imp": 0.28957374902380717, "fcf": 203320.59, "dso": 24.466810740081176, "dio": 52.954083216652606, "dpo": 99.3855874416289, "ebitda_used": 236357.61, "kt": -33419.53000000003}, "2022": {"m_bruto": 0.4028710472589691, "m_ebitda": null, "m_ebit": 0.10837000089641965, "m_neto": 0.046847588291992516, "deuda_tot": 683395.16, "deuda_neta": 667311.66, "dn_ebitda": null, "endeud": 0.8457337233251724, "pas_pat": 5.482298150670117, "rc": 0.655586795741746, "cobert": null, "cob_ebit": 2.4144831378451532, "roa": 0.0634768896204862, "roe": 0.41147612419716884, "tasa_imp": 0.34425539531864235, "fcf": null, "dso": 19.79157144676802, "dio": 60.59492706913083, "dpo": 123.66998044731177, "ebitda_used": null, "kt": -208602.96000000008}, "2023": {"m_bruto": 0.400315372152308, "m_ebitda": 0.10397485941664102, "m_ebit": 0.06298198664742556, "m_neto": 0.04294392419693467, "deuda_tot": null, "deuda_neta": null, "dn_ebitda": null, "endeud": 0.8447587484572183, "pas_pat": 5.441586820912859, "rc": 0.9012979961679071, "cobert": null, "cob_ebit": null, "roa": 0.06092950538054057, "roe": 0.3924826988640293, "tasa_imp": 0.0, "fcf": null, "dso": null, "dio": null, "dpo": null, "ebitda_used": 226690.48333333334, "kt": -48035.70000000001}, "2024": {"m_bruto": 0.41898896154754534, "m_ebitda": 0.1398949236266015, "m_ebit": 0.09545972484814774, "m_neto": 0.04790425676550516, "deuda_tot": 828809.28, "deuda_neta": 779260.68, "dn_ebitda": 2.654589542719536, "endeud": 0.8771930309989385, "pas_pat": 7.142860361543129, "rc": 0.8495419193941282, "cobert": 2.6399438866675435, "cob_ebit": 1.8014114486990092, "roa": 0.07023636238234804, "roe": 0.5719248911822008, "tasa_imp": 0.3735949671820427, "fcf": 168649.21, "dso": 33.51944584474654, "dio": 50.292123939538214, "dpo": 90.86404402401794, "ebitda_used": 293552.23, "kt": -76470.33000000002}, "2025": {"m_bruto": 0.42626771715365536, "m_ebitda": 0.1509621595844933, "m_ebit": 0.11118812982387907, "m_neto": 0.050108626309787116, "deuda_tot": 698820.41, "deuda_neta": 606830.25, "dn_ebitda": 1.7612031227117182, "endeud": 0.8782475671678125, "pas_pat": 7.213387799270174, "rc": 0.8360351663842284, "cobert": 3.815238080895971, "cob_ebit": 2.8100365562817697, "roa": 0.08505293504494568, "roe": 0.6985727337951174, "tasa_imp": 0.3648953391623768, "fcf": 372771.37, "dso": 36.92531323702241, "dio": 50.78527601041843, "dpo": 93.23752809778853, "ebitda_used": 344554.38, "kt": -101958.09999999998}}, "est": {"ebitda2023": 226690.48333333334, "da_avg": 89374.43333333333}};
+const Y = DATA.Y, D = DATA.d, R = DATA.ratios, EST = DATA.est;
+const S = {year:2025, range:3, vbar:'ebitda', margin:true, pie:'total', wf:'pyg', donut:'fin', bub:'dn', hbar:'cob', tbl:3};
+const COL = {azul:'#0033A1', azul2:'#1F5FC4', celeste:'#8DB9EA', medio:'#5A8FD8', marino:'#06205E', verde:'#2E8540', ambar:'#E0A100', rojo:'#C8102E', gris:'#8A99B2', hielo:'#EAF2FC', lila:'#6C7FC4', turq:'#2A9BB7'};
+/* ---------- helpers ---------- */
+const nf0 = new Intl.NumberFormat('es-CO',{maximumFractionDigits:0});
+const nf1 = new Intl.NumberFormat('es-CO',{minimumFractionDigits:1,maximumFractionDigits:1});
+const nf2 = new Intl.NumberFormat('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ix = y => Y.indexOf(y);
+const v = (k,y) => { const i = ix(y); return i<0 ? null : D[k][i]; };
+const rt = (k,y) => R[String(y)] ? R[String(y)][k] : null;
+const isN = x => x!==null && x!==undefined && !Number.isNaN(x);
+const mm = x => isN(x) ? '$' + nf0.format(x) + ' M' : 'n.d.';
+const mms = x => isN(x) ? (x>0?'+':x<0?'−':'') + '$' + nf0.format(Math.abs(x)) + ' M' : 'n.d.';
+const num = x => isN(x) ? nf0.format(x) : 'n.d.';
+const pct = (x,d=1) => isN(x) ? (d===1?nf1:nf2).format(x*100) + ' %' : 'n.d.';
+const xx = x => isN(x) ? nf2.format(x) + 'x' : 'n.d.';
+const chg = (a,b) => (isN(a)&&isN(b)&&b!==0) ? ((a<0&&b<0) ? Math.abs(a)/Math.abs(b)-1 : (a-b)/Math.abs(b)) : null;
+const spct = x => isN(x) ? (x>=0?'+':'−') + nf1.format(Math.abs(x*100)) + ' %' : 'n.d.';
+const spp = x => isN(x) ? (x>=0?'+':'−') + nf1.format(Math.abs(x*100)) + ' pp' : 'n.d.';
+const sx = x => isN(x) ? (x>=0?'+':'−') + nf2.format(Math.abs(x)) + 'x' : 'n.d.';
+const ebitda = y => isN(v('ebitda',y)) ? v('ebitda',y) : (y===2023 ? EST.ebitda2023 : null);
+const hasDetail = y => isN(v('g_admin',y));
+const years = () => S.range===3 ? [2023,2024,2025] : Y.slice();
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const r1 = x => Math.round(x*10)/10;
+
+/* ================= Motor de gráficos SVG (sin librerías externas) ================= */
+const tipEl = $('tip'); let lastPT = 'mouse';
+document.addEventListener('pointerdown', e => { lastPT = e.pointerType || 'mouse'; }, true);
+function showTip(html, e){
+  tipEl.innerHTML = html; tipEl.hidden = false;
+  const r = tipEl.getBoundingClientRect(), pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - pad;
+  tipEl.style.left = Math.max(8, x) + 'px'; tipEl.style.top = Math.max(8, y) + 'px';
+}
+function hideTip(){ tipEl.hidden = true; }
+document.addEventListener('scroll', hideTip, {passive:true});
+function TT(title, rows, foot){
+  return `<b>${title}</b>` + rows.filter(Boolean).map(r => Array.isArray(r) ? `<div class="tr"><span>${r[0]}</span><span>${r[1]}</span></div>` : `<div class="tn">${r}</div>`).join('') + (foot ? `<div class="tf">${foot}</div>` : '');
+}
+function clearHov(el){ el.querySelectorAll('.hov').forEach(n => n.classList.remove('hov')); }
+function wire(el, tips, onClick){
+  el._tips = tips; el._click = onClick;
+  if (el._wired) return; el._wired = true;
+  el.addEventListener('pointermove', e => {
+    const t = e.target.closest('[data-t]');
+    if (t && el._tips[+t.dataset.t]) { showTip(el._tips[+t.dataset.t], e); if (!t.classList.contains('hov')) { clearHov(el); t.classList.add('hov'); } }
+    else { hideTip(); clearHov(el); }
+  });
+  el.addEventListener('pointerleave', () => { hideTip(); clearHov(el); });
+  el.addEventListener('click', e => {
+    const t = e.target.closest('[data-t]');
+    if (lastPT !== 'mouse') { if (t) { clearHov(el); t.classList.add('hov'); showTip(el._tips[+t.dataset.t], e); } else hideTip(); return; }
+    if (t && t.dataset.i !== undefined && el._click) { hideTip(); el._click(+t.dataset.i); }
+  });
+}
+function nice(min, max, n = 5){
+  if (min === max) { max = min + 1; }
+  const span = max - min; let step = Math.pow(10, Math.floor(Math.log10(span / n)));
+  const err = span / n / step;
+  if (err >= 7.5) step *= 10; else if (err >= 3.5) step *= 5; else if (err >= 1.5) step *= 2;
+  return {min: Math.floor(min / step + 1e-9) * step, max: Math.ceil(max / step - 1e-9) * step, step};
+}
+function size(el){ return {W: Math.max(el.clientWidth, 280), H: el.clientHeight || 330}; }
+function legend(id, items){ const l = $(id); if (!l) return; l.innerHTML = (items||[]).map(i => `<span><i class="${i.line?'ln':''}" style="background:${i.color}"></i>${esc(i.name)}</span>`).join(''); }
+function wrapText(t, max){ const w = String(t).split(' '); const lines = []; let cur = '';
+  w.forEach(x => { if ((cur + ' ' + x).trim().length > max && cur) { lines.push(cur); cur = x; } else cur = (cur + ' ' + x).trim(); });
+  if (cur) lines.push(cur); return lines.slice(0, 3); }
+function axFmt(v){ return Math.abs(v) >= 1000 ? nf0.format(v) : (Number.isInteger(v) ? nf0.format(v) : nf1.format(v)); }
+
+/* Barras verticales agrupadas + línea opcional */
+function barChart(el, o){
+  const {W, H} = size(el); const n = o.labels.length, ser = o.series;
+  const vals = ser.flatMap(s => s.data).filter(isN);
+  const hasLine = o.line && o.line.data.some(isN);
+  const P = {l: 76, r: 14, t: o.rotate ? 76 : 26, b: 30};
+  const pw = W - P.l - P.r, ph = H - P.t - P.b;
+  const dmax = Math.max(0, ...vals), dmin = Math.min(0, ...vals);
+  const sc = nice(dmin, hasLine ? dmax / 0.66 : dmax * 1.1, 5);
+  const yv = v => P.t + ph - (v - sc.min) / (sc.max - sc.min) * ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`, tips = [];
+  for (let t = sc.min; t <= sc.max + sc.step / 1e6; t += sc.step) { const y = yv(t); s += `<line class="grid-l" x1="${P.l}" x2="${W - P.r}" y1="${y}" y2="${y}"/><text class="ax" x="${P.l - 8}" y="${y + 4}" text-anchor="end">${axFmt(t)}</text>`; }
+  s += `<text class="axt" transform="translate(14 ${P.t + ph / 2}) rotate(-90)" text-anchor="middle">${o.yTitle || 'Millones COP'}</text>`;
+  const gw = pw / n, inner = gw * (ser.length > 1 ? 0.8 : 0.62), bw = inner / ser.length;
+  ser.forEach((sr, si) => sr.data.forEach((v, i) => {
+    if (!isN(v)) { const cx = P.l + i * gw + gw / 2; s += `<text class="ax" x="${cx}" y="${yv(0) - 8}" text-anchor="middle">n.d.</text>`; return; }
+    const x = P.l + i * gw + (gw - inner) / 2 + si * bw, y1 = yv(Math.max(v, 0)), y0 = yv(Math.min(v, 0));
+    const col = sr.colors ? sr.colors[i] : sr.color, op = sr.op ? sr.op[i] : 1;
+    tips.push(o.tip(si, i));
+    s += `<rect class="hit" data-t="${tips.length - 1}" data-i="${i}" x="${x + 1}" y="${y1}" width="${Math.max(bw - 2, 2)}" height="${Math.max(y0 - y1, 1)}" rx="3" fill="${col}" opacity="${op}"/>`;
+    const lbl = o.labelFmt ? o.labelFmt(v, si, i) : null;
+    if (lbl) {
+      const cx = x + bw / 2, top = v >= 0 ? y1 : y0;
+      if (o.rotate) s += `<text class="vl" font-size="10.5" transform="translate(${cx + 3.5} ${top - 6}) rotate(-90)" text-anchor="start">${esc(lbl)}</text>`;
+      else s += `<text class="vl" x="${cx}" y="${v >= 0 ? top - 6 : top + 14}" text-anchor="middle">${esc(lbl)}</text>`;
+    }
+  }));
+  s += `<line class="axis" x1="${P.l}" x2="${W - P.r}" y1="${yv(0)}" y2="${yv(0)}"/>`;
+  o.labels.forEach((l, i) => { s += `<text class="xl ${o.sel === l ? 'sel' : ''}" x="${P.l + i * gw + gw / 2}" y="${H - 9}" text-anchor="middle">${esc(l)}${o.sel === l ? ' ●' : ''}</text>`; });
+  if (hasLine) {
+    const lv = o.line.data.filter(isN), lmin = Math.min(...lv), lmax = Math.max(...lv);
+    const bTop = P.t + 22, bBot = Math.max(yv(dmax) - 34, bTop + 30);
+    const ly = v => lmax === lmin ? (bTop + bBot) / 2 : bBot - (v - lmin) / (lmax - lmin) * (bBot - bTop);
+    let d = '', pen = false;
+    o.line.data.forEach((v, i) => { const x = P.l + i * gw + gw / 2; if (!isN(v)) { pen = false; return; } d += (pen ? 'L' : 'M') + x + ' ' + ly(v) + ' '; pen = true; });
+    s += `<path d="${d}" fill="none" stroke="${o.line.color}" stroke-width="2.5" stroke-linejoin="round"/>`;
+    o.line.data.forEach((v, i) => { if (!isN(v)) return; const x = P.l + i * gw + gw / 2, y = ly(v);
+      tips.push(o.lineTip(i));
+      s += `<circle class="hit" data-t="${tips.length - 1}" cx="${x}" cy="${y}" r="5.5" fill="#fff" stroke="${o.line.color}" stroke-width="2.5"/><text class="vl" x="${x}" y="${y - 10}" text-anchor="middle" fill="${o.line.color}" style="fill:${o.line.color}">${esc(o.line.fmt(v))}</text>`; });
+  }
+  el.innerHTML = s + '</svg>'; wire(el, tips, o.onClick);
+}
+
+/* Barras horizontales: agrupadas, apiladas o divergentes */
+function hbarChart(el, o){
+  const {W, H} = size(el); const n = o.labels.length, ser = o.series;
+  const stacks = [...new Set(ser.map((s, i) => s.stack || ('s' + i)))];
+  const lw = Math.min(210, Math.max(46, ...o.labels.map(l => String(l).length * 6.4))) + 12;
+  const P = {l: lw, r: 14, t: 8, b: 30};
+  const pw = W - P.l - P.r, ph = H - P.t - P.b;
+  let mn = 0, mx = 0;
+  o.labels.forEach((_, i) => stacks.forEach(st => { let pos = 0, neg = 0; ser.forEach((s, si) => { if ((s.stack || ('s' + si)) !== st) return; const v = s.data[i]; if (!isN(v)) return; if (v >= 0) pos += v; else neg += v; }); mx = Math.max(mx, pos); mn = Math.min(mn, neg); }));
+  const span = (mx - mn) || 1; const room = o.room || 0.3;
+  const sc = nice(mn < 0 ? mn - span * room : 0, mx > 0 ? mx + span * room : 0, 5);
+  const xv = v => P.l + (v - sc.min) / (sc.max - sc.min) * pw;
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`, tips = [];
+  for (let t = sc.min; t <= sc.max + sc.step / 1e6; t += sc.step) { const x = xv(t); s += `<line class="grid-l" x1="${x}" x2="${x}" y1="${P.t}" y2="${P.t + ph}"/><text class="ax" x="${x}" y="${H - 10}" text-anchor="middle">${axFmt(t)}</text>`; }
+  const gh = ph / n, inner = gh * (stacks.length > 1 ? 0.8 : 0.62), bh = inner / stacks.length;
+  o.labels.forEach((lab, i) => {
+    const sel = o.sel === lab;
+    const lines = String(lab).length > 30 ? wrapText(lab, 26) : [lab];
+    const cy = P.t + i * gh + gh / 2;
+    s += `<text class="xl ${sel ? 'sel' : ''}" x="${P.l - 8}" y="${cy - (lines.length - 1) * 7 + 4}" text-anchor="end">${lines.map((ln, k) => `<tspan x="${P.l - 8}" dy="${k ? 14 : 0}">${esc(ln)}</tspan>`).join('')}</text>`;
+    stacks.forEach((st, k) => {
+      let pos = 0, neg = 0; const y = P.t + i * gh + (gh - inner) / 2 + k * bh;
+      ser.forEach((sr, si) => { if ((sr.stack || ('s' + si)) !== st) return; const v = sr.data[i]; if (!isN(v)) return;
+        const a = v >= 0 ? pos : neg, b = a + v; if (v >= 0) pos = b; else neg = b;
+        const x0 = xv(Math.min(a, b)), x1 = xv(Math.max(a, b));
+        const col = sr.colors ? sr.colors[i] : sr.color;
+        tips.push(o.tip(si, i));
+        s += `<rect class="hit" data-t="${tips.length - 1}" ${o.onClick ? `data-i="${i}"` : ''} x="${x0}" y="${y + 1}" width="${Math.max(x1 - x0, 1.5)}" height="${Math.max(bh - 2, 2)}" rx="3" fill="${col}"/>`;
+        const single = ser.filter((q, qi) => (q.stack || ('s' + qi)) === st).length === 1;
+        if (single && o.labelFmt) { const t = o.labelFmt(v, si, i); s += `<text class="vl" x="${v >= 0 ? x1 + 5 : x0 - 5}" y="${y + bh / 2 + 4}" text-anchor="${v >= 0 ? 'start' : 'end'}">${esc(t)}</text>`; }
+      });
+      const multi = ser.filter((q, qi) => (q.stack || ('s' + qi)) === st).length > 1;
+      if (multi && o.totalFmt && pos > 0) s += `<text class="vl" x="${xv(pos) + 5}" y="${y + bh / 2 + 4}" text-anchor="start">${esc(o.totalFmt(pos, st, i))}</text>`;
+    });
+  });
+  s += `<line class="axis" x1="${xv(0)}" x2="${xv(0)}" y1="${P.t}" y2="${P.t + ph}"/>`;
+  el.innerHTML = s + '</svg>'; wire(el, tips, o.onClick);
+}
+
+/* Cascada */
+function waterfallChart(el, o){
+  const {W, H} = size(el); const st = o.steps, n = st.length;
+  const narrow = W / n < 78;
+  const P = {l: 76, r: 12, t: 26, b: narrow ? 64 : 50};
+  const pw = W - P.l - P.r, ph = H - P.t - P.b;
+  const all = st.flatMap(x => [x.a, x.b]);
+  const mx = Math.max(0, ...all), mn = Math.min(0, ...all);
+  const lo = o.zero ? Math.min(0, mn) : Math.min(...all) - (mx - Math.min(...all)) * 0.25;
+  const sc = nice(Math.max(lo, o.zero ? mn : -Infinity), mx * 1.08, 5);
+  const yv = v => P.t + ph - (v - sc.min) / (sc.max - sc.min) * ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`, tips = [];
+  for (let t = sc.min; t <= sc.max + sc.step / 1e6; t += sc.step) { const y = yv(t); s += `<line class="grid-l" x1="${P.l}" x2="${W - P.r}" y1="${y}" y2="${y}"/><text class="ax" x="${P.l - 8}" y="${y + 4}" text-anchor="end">${axFmt(t)}</text>`; }
+  s += `<text class="axt" transform="translate(14 ${P.t + ph / 2}) rotate(-90)" text-anchor="middle">Millones COP</text>`;
+  const gw = pw / n, bw = gw * 0.66;
+  st.forEach((x, i) => {
+    const bx = P.l + i * gw + (gw - bw) / 2;
+    const ya = yv(Math.max(x.a, x.b)), yb = yv(Math.max(Math.min(x.a, x.b), sc.min));
+    tips.push(x.tip);
+    s += `<rect class="hit" data-t="${tips.length - 1}" x="${bx}" y="${ya}" width="${bw}" height="${Math.max(yb - ya, 1.5)}" rx="3" fill="${x.color}"/>`;
+    s += `<text class="vl" font-size="${narrow ? 9.5 : 10.5}" x="${bx + bw / 2}" y="${ya - 6}" text-anchor="middle">${esc(x.lbl)}</text>`;
+    if (i < n - 1) { const nx = P.l + (i + 1) * gw + (gw - bw) / 2; s += `<line x1="${bx + bw}" x2="${nx}" y1="${yv(x.b)}" y2="${yv(x.b)}" stroke="${COL.gris}" stroke-dasharray="3 3"/>`; }
+    const lines = wrapText(x.l, narrow ? 9 : 13);
+    s += `<text class="xl" font-size="${narrow ? 10 : 11}" x="${bx + bw / 2}" y="${H - P.b + 16}" text-anchor="middle">${lines.map((ln, k) => `<tspan x="${bx + bw / 2}" dy="${k ? 13 : 0}">${esc(ln)}</tspan>`).join('')}</text>`;
+  });
+  el.innerHTML = s + '</svg>'; wire(el, tips, null);
+}
+
+/* Torta y dona */
+function pieChart(el, o){
+  const {W, H} = size(el); const tot = o.slices.reduce((a, b) => a + b.v, 0);
+  const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 14, r0 = o.donut ? R * 0.58 : 0;
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`, tips = [], a0 = -Math.PI / 2;
+  const P = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  o.slices.forEach((sl, i) => {
+    const f = sl.v / tot, a1 = a0 + f * 2 * Math.PI, large = f > 0.5 ? 1 : 0, mid = (a0 + a1) / 2;
+    let d;
+    if (f >= 0.9999) d = o.donut ? `M${cx} ${cy - R}A${R} ${R} 0 1 1 ${cx - 0.01} ${cy - R}ZM${cx} ${cy - r0}A${r0} ${r0} 0 1 0 ${cx + 0.01} ${cy - r0}Z` : `M${cx} ${cy - R}A${R} ${R} 0 1 1 ${cx - 0.01} ${cy - R}Z`;
+    else { const [x1, y1] = P(R, a0), [x2, y2] = P(R, a1);
+      if (o.donut) { const [x3, y3] = P(r0, a1), [x4, y4] = P(r0, a0); d = `M${x1} ${y1}A${R} ${R} 0 ${large} 1 ${x2} ${y2}L${x3} ${y3}A${r0} ${r0} 0 ${large} 0 ${x4} ${y4}Z`; }
+      else d = `M${cx} ${cy}L${x1} ${y1}A${R} ${R} 0 ${large} 1 ${x2} ${y2}Z`; }
+    tips.push(sl.tip);
+    s += `<path class="hit slice" data-t="${tips.length - 1}" d="${d}" fill="${sl.color}" stroke="#fff" stroke-width="2" style="--dx:${r1(Math.cos(mid) * 7)}px;--dy:${r1(Math.sin(mid) * 7)}px"/>`;
+    if (f >= (o.minLabel || 0.04)) { const [lx, ly] = P(o.donut ? (R + r0) / 2 : R * 0.64, mid); s += `<text class="vl w" x="${lx}" y="${ly + 4}" text-anchor="middle" font-size="12" style="pointer-events:none">${esc(o.labelFmt(sl.v / (o.base || tot)))}</text>`; }
+    a0 = a1;
+  });
+  if (o.donut && o.center) s += `<text x="${cx}" y="${cy - 12}" text-anchor="middle" class="ax">${esc(o.center.top)}</text><text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="18" font-weight="800" fill="${COL.marino}">${esc(o.center.big)}</text><text x="${cx}" y="${cy + 28}" text-anchor="middle" class="ax">${esc(o.center.small || '')}</text>`;
+  el.innerHTML = s + '</svg>'; wire(el, tips, null);
+}
+
+/* Burbujas */
+function bubbleChart(el, o){
+  const {W, H} = size(el); const pts = o.points;
+  const P = {l: 70, r: 22, t: 22, b: 46};
+  const pw = W - P.l - P.r, ph = H - P.t - P.b;
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const pad = (a, b, k) => { const sp = (b - a) || Math.abs(a) * 0.2 || 1; return [a - sp * k, b + sp * k]; };
+  let [x0, x1] = pad(Math.min(...xs, isN(o.refX) ? o.refX : Infinity), Math.max(...xs, isN(o.refX) ? o.refX : -Infinity), 0.35);
+  let [y0, y1] = pad(Math.min(...ys, isN(o.refY) ? o.refY : Infinity), Math.max(...ys, isN(o.refY) ? o.refY : -Infinity), 0.35);
+  const sx = nice(x0, x1, 5), sy = nice(y0, y1, 5);
+  const xv = v => P.l + (v - sx.min) / (sx.max - sx.min) * pw, yv = v => P.t + ph - (v - sy.min) / (sy.max - sy.min) * ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`, tips = [];
+  for (let t = sy.min; t <= sy.max + sy.step / 1e6; t += sy.step) { const y = yv(t); s += `<line class="grid-l" x1="${P.l}" x2="${W - P.r}" y1="${y}" y2="${y}"/><text class="ax" x="${P.l - 8}" y="${y + 4}" text-anchor="end">${o.yf(t)}</text>`; }
+  for (let t = sx.min; t <= sx.max + sx.step / 1e6; t += sx.step) { const x = xv(t); s += `<line class="grid-l" x1="${x}" x2="${x}" y1="${P.t}" y2="${P.t + ph}"/><text class="ax" x="${x}" y="${P.t + ph + 16}" text-anchor="middle">${o.xf(t)}</text>`; }
+  if (isN(o.refX)) s += `<line class="ref" x1="${xv(o.refX)}" x2="${xv(o.refX)}" y1="${P.t}" y2="${P.t + ph}"/>`;
+  if (isN(o.refY)) s += `<line class="ref" x1="${P.l}" x2="${W - P.r}" y1="${yv(o.refY)}" y2="${yv(o.refY)}"/>`;
+  if (o.q) s += `<text class="qd" x="${P.l + 6}" y="${P.t + 13}">${esc(o.q[0])}</text><text class="qd" x="${W - P.r - 6}" y="${P.t + 13}" text-anchor="end">${esc(o.q[1])}</text><text class="qd" x="${P.l + 6}" y="${P.t + ph - 7}">${esc(o.q[2])}</text><text class="qd" x="${W - P.r - 6}" y="${P.t + ph - 7}" text-anchor="end" style="fill:${COL.verde}">${esc(o.q[3])}</text>`;
+  s += `<text class="axt" x="${P.l + pw / 2}" y="${H - 6}" text-anchor="middle">${esc(o.xl)}</text><text class="axt" transform="translate(13 ${P.t + ph / 2}) rotate(-90)" text-anchor="middle">${esc(o.yl)}</text>`;
+  pts.map((p, i) => ({...p, i})).sort((a, b) => b.r - a.r).forEach(p => {
+    tips.push(p.tip);
+    s += `<circle class="hit" data-t="${tips.length - 1}" data-i="${p.i}" cx="${xv(p.x)}" cy="${yv(p.y)}" r="${p.r}" fill="${p.color}" fill-opacity=".88" stroke="${p.sel ? COL.ambar : '#fff'}" stroke-width="${p.sel ? 4 : 1.5}"/><text class="vl w" x="${xv(p.x)}" y="${yv(p.y) + 4}" text-anchor="middle" style="pointer-events:none">${esc(p.label)}</text>`;
+  });
+  el.innerHTML = s + '</svg>'; wire(el, tips, o.onClick);
+}
+
+function empty(id, html){ const e = $(id); if (!html) { e.hidden = true; e.innerHTML = ''; return; } e.hidden = false; e.innerHTML = html; }
+window.goYear = y => { S.year = y; refresh(); };
+
+/* ---------- KPI cards ---------- */
+const KPI = [
+  {k:'m_ebitda', name:'Margen EBITDA', chart:'p-vbar', ctype:'Barras verticales', f:y=>isN(ebitda(y))?ebitda(y)/v('ventas',y):null, fmt:pct, d:spp, good:x=>x>=.14?'ok':x>=.10?'warn':'bad', est:y=>y===2023},
+  {k:'m_neto', name:'Margen neto', chart:'p-wf', ctype:'Cascada', f:y=>rt('m_neto',y), fmt:pct, d:spp, good:x=>x>=.05?'ok':x>=.03?'warn':'bad'},
+  {k:'dn', name:'Deuda neta / EBITDA', chart:'p-bub', ctype:'Burbujas', f:y=>rt('dn_ebitda',y), fmt:xx, d:sx, inv:true, good:x=>x<=2.5?'ok':x<=3.5?'warn':'bad'},
+  {k:'cob', name:'Cobertura de intereses', chart:'p-hbar', ctype:'Barras horizontales', f:y=>rt('cobert',y), fmt:xx, d:sx, good:x=>x>=4?'ok':x>=2.5?'warn':'bad'},
+  {k:'end', name:'Pasivo / Activo', chart:'p-donut', ctype:'Dona', f:y=>rt('endeud',y), fmt:pct, d:spp, inv:true, good:x=>x<=.70?'ok':x<=.85?'warn':'bad'}
+];
+const LBL = {ok:'Sano', warn:'Vigilar', bad:'Crítico', na:'Sin dato'};
+function renderKPIs(){
+  const y = S.year, box = document.getElementById('kpis');
+  box.innerHTML = KPI.map(k=>{
+    const val = k.f(y), prev = Y.includes(y-1) ? k.f(y-1) : null;
+    const st = isN(val) ? k.good(val) : 'na';
+    let delta = '';
+    if(isN(val)&&isN(prev)){ const dd = val-prev; const better = k.inv ? dd<0 : dd>0; delta = `<span class="kdelta ${dd===0?'':(better?'up':'down')}">${k.d(dd)} vs ${y-1}</span>`; }
+    else delta = `<span class="kdelta na">${isN(val)?'Sin dato comparable de '+(y-1):'No reportado en EMIS para '+y}</span>`;
+    const est = k.est && k.est(y) ? ' <small style="font-size:13px;font-weight:600;color:var(--ochre)">(est.)</small>' : '';
+    return `<button class="kpi" data-go="${k.chart}" title="Ir al gráfico">
+      <span class="kname">${k.name}</span><span class="kval">${isN(val)?k.fmt(val):'n.d.'}${est}</span>${delta}
+      <span class="kfoot"><span class="light ${st}">${LBL[st]}</span><span>${k.ctype}</span></span></button>`;
+  }).join('');
+  box.querySelectorAll('.kpi').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.go).scrollIntoView({behavior:'smooth',block:'center'}));
+}
+function renderDQ(){
+  const y=S.year, b=document.getElementById('dqBox'); let m='';
+  if(y===2023) m='<b>2023 tiene información parcial.</b> Proviene de la Cámara de Comercio de Bogotá y no está auditado: no trae EBITDA, detalle de gastos, balance detallado ni flujo de efectivo, y reporta impuesto de renta en cero. El EBITDA mostrado es un estimado (EBIT + depreciación promedio).';
+  else if(y===2022) m='<b>2022 no reporta EBITDA ni flujo de efectivo en EMIS.</b> Los indicadores que dependen de ellos aparecen como n.d.';
+  b.hidden=!m; b.innerHTML=m?`<div>${m}</div>`:'';
+}
+
+
+function pieSlices(y, mode){
+  if(mode==='opex'){
+    if(!hasDetail(y)) return null;
+    return [['Gastos administrativos',v('g_admin',y)],['Gastos de venta y distribución',v('g_venta',y)],['Otros gastos operativos netos',v('otros_net',y)]];
+  }
+  const s = [['Costo de ventas',v('cogs',y)]];
+  if(hasDetail(y)) s.push(['Gastos administrativos',v('g_admin',y)],['Gastos de venta',v('g_venta',y)],['Otros operativos netos',v('otros_net',y)]);
+  else s.push(['Gastos operativos (agregado)',v('opex_total',y)]);
+  s.push(['Resultado financiero neto',-v('res_fin',y)]);
+  if(v('imp',y)>0) s.push(['Impuesto de renta',v('imp',y)]);
+  s.push(['Utilidad neta',v('un',y)]);
+  return s;
+}
+function wfSteps(y){
+  const st=[{l:'Ventas netas',t:'total',v:v('ventas',y)},{l:'Costo de ventas',v:-v('cogs',y)},{l:'Utilidad bruta',t:'sub'}];
+  if(hasDetail(y)) st.push({l:'Gastos de venta',v:-v('g_venta',y)},{l:'Gastos admin.',v:-v('g_admin',y)},{l:'Otros op. netos',v:-v('otros_net',y)});
+  else st.push({l:'Gastos operativos (agregado)',v:-v('opex_total',y)});
+  st.push({l:'EBIT',t:'sub'},{l:'Resultado financiero',v:v('res_fin',y)},{l:'Utilidad antes de imp.',t:'sub'},{l:'Impuestos',v:-v('imp',y)},{l:'Utilidad neta',t:'total'});
+  return st;
+}
+function bridgeSteps(y){
+  const p=y-1, both = hasDetail(y)&&hasDetail(p);
+  const d = k => v(k,y)-v(k,p);
+  const st=[{l:'Utilidad neta '+p,t:'total',v:v('un',p)},{l:'Ventas netas',v:d('ventas')},{l:'Costo de ventas',v:-d('cogs')}];
+  if(both) st.push({l:'Gastos de venta',v:-d('g_venta')},{l:'Gastos admin.',v:-d('g_admin')},{l:'Otros op. netos',v:-d('otros_net')});
+  else st.push({l:'Gastos operativos',v:-d('opex_total')});
+  st.push({l:'Resultado financiero',v:d('res_fin')},{l:'Impuestos',v:-d('imp')},{l:'Utilidad neta '+y,t:'total',v:v('un',y)});
+  return st;
+}
+function donutSlices(y,mode){
+  if(mode==='fin'){
+    if(!isN(v('deuda_lp',y))) return {s:[['Patrimonio',v('patrimonio',y)],['Pasivo no corriente',v('pas_nc',y)],['Pasivo corriente',v('pas_c',y)]], tot:v('activo',y), agg:true};
+    const deuda = v('deuda_lp',y)+v('deuda_cp',y);
+    return {s:[['Patrimonio',v('patrimonio',y)],['Deuda financiera largo plazo',v('deuda_lp',y)],['Deuda financiera corto plazo',v('deuda_cp',y)],['Proveedores y cuentas por pagar',v('proveed',y)],['Otros pasivos',v('pasivo',y)-deuda-v('proveed',y)]], tot:v('activo',y)};
+  }
+  if(!isN(v('ppe',y))) return {s:[['Activo no corriente',v('activo',y)-v('act_c',y)],['Activo corriente',v('act_c',y)]], tot:v('activo',y), agg:true};
+  const onc = v('act_nc',y)-v('ppe',y)-v('inv_sub',y)-v('intang',y), oc = v('act_c',y)-v('invent',y)-v('cxc',y)-v('caja',y);
+  return {s:[['Propiedad, planta y equipo',v('ppe',y)],['Inversiones en subsidiarias',v('inv_sub',y)],['Intangibles',v('intang',y)],['Otros no corrientes',onc],['Inventarios',v('invent',y)],['Cuentas por cobrar',v('cxc',y)],['Efectivo',v('caja',y)],['Otros corrientes',oc]], tot:v('activo',y)};
+}
+
+/* ================= 1. Barras verticales ================= */
+function vbar(){
+  const el = $('c-vbar'); if (!el.clientWidth) return;
+  const ys = years(), m = S.vbar; let series, line = null, read, rotate = false, lg = [];
+  if (m === 'comp') {
+    const defs = [['EBITDA', y => ebitda(y), COL.azul], ['EBIT', y => v('ebit', y), COL.medio], ['Utilidad neta', y => v('un', y), COL.ambar]];
+    series = defs.map(([nm, f, c]) => ({name: nm, color: c, data: ys.map(f), op: ys.map(y => y === S.year ? 1 : 0.6), f}));
+    rotate = true; lg = defs.map(d => ({name: d[0], color: d[2]}));
+    const y = S.year; read = `En <b>${y}</b>, de cada $100 de EBITDA quedaron <b>$${nf0.format(100 * v('un', y) / ebitda(y))}</b> como utilidad neta; la diferencia la explican depreciación, costo financiero e impuestos.`;
+  } else {
+    const map = {ventas: ['Ventas netas', y => v('ventas', y), 'Margen bruto', y => rt('m_bruto', y)],
+      ebitda: ['EBITDA', y => ebitda(y), 'Margen EBITDA', y => isN(ebitda(y)) ? ebitda(y) / v('ventas', y) : null],
+      un: ['Utilidad neta', y => v('un', y), 'Margen neto', y => rt('m_neto', y)]}[m];
+    series = [{name: map[0], data: ys.map(map[1]), colors: ys.map(y => (m === 'ebitda' && y === 2023) ? COL.celeste : (y === S.year ? COL.azul : COL.medio)), f: map[1]}];
+    lg = [{name: map[0] + ' (año seleccionado)', color: COL.azul}, {name: map[0] + ' (otros años)', color: COL.medio}];
+    if (m === 'ebitda' && ys.includes(2023)) lg.push({name: 'EBITDA 2023 estimado', color: COL.celeste});
+    if (S.margin) { line = {name: map[2], data: ys.map(map[3]), color: COL.ambar, fmt: x => pct(x)}; lg.push({name: map[2] + ' (eje propio)', color: COL.ambar, line: true}); }
+    const y = S.year, a = map[1](y), p = Y.includes(y - 1) ? map[1](y - 1) : null;
+    read = isN(a) ? `En <b>${y}</b> ${map[0].toLowerCase()} fue <b>${mm(a)}</b>${m === 'ebitda' && y === 2023 ? ' (estimado)' : ''}${isN(p) ? `, <b>${spct(chg(a, p))}</b> frente a ${y - 1}` : ''}; ${map[2].toLowerCase()} de <b>${pct(map[3](y))}</b>.` : `${map[0]} no está reportado para ${y} en EMIS.`;
+    if (m === 'ebitda') read += ' 2022 no reporta EBITDA en EMIS.';
+  }
+  const tip = (si, i) => {
+    const sr = series[si], y = ys[i], val = sr.data[i], p = Y.includes(y - 1) ? sr.f(y - 1) : null;
+    const rows = [['Valor', mm(val) + (sr.name === 'EBITDA' && y === 2023 ? ' (est.)' : '')], isN(p) ? ['Variación vs ' + (y - 1), spct(chg(val, p))] : null, ['Sobre ventas netas', pct(val / v('ventas', y))]];
+    if (sr.name === 'EBITDA') { rows.push(['EBIT', mm(v('ebit', y))], ['Depreciación y amort.', isN(v('da', y)) ? mm(v('da', y)) : (y === 2023 ? mm(EST.da_avg) + ' (prom.)' : 'n.d.')]); }
+    if (sr.name === 'Utilidad neta') rows.push(['Impuesto de renta', mm(v('imp', y))], ['Tasa efectiva', pct(rt('tasa_imp', y))]);
+    if (sr.name === 'Ventas netas') rows.push(['Ingresos operacionales', mm(v('ing_total', y))], ['Utilidad bruta', mm(v('bruta', y))]);
+    if (sr.name === 'EBIT') rows.push(['Margen EBIT', pct(rt('m_ebit', y))]);
+    return TT(`${sr.name} ${y}`, rows, y === S.year ? 'Año seleccionado' : 'Clic para analizar ' + y);
+  };
+  const lineTip = i => { const y = ys[i], val = line.data[i], p = i > 0 ? line.data[i - 1] : null; return TT(`${line.name} ${y}`, [['Valor', pct(val)], isN(p) ? ['Cambio vs ' + ys[i - 1], spp(val - p)] : null, m === 'ebitda' && y === 2023 ? 'Calculado con EBITDA estimado' : null]); };
+  barChart(el, {labels: ys.map(String), sel: String(S.year), series, line, rotate, tip, lineTip,
+    labelFmt: (val, si, i) => '$' + nf0.format(val) + ' M' + (series[si].name === 'EBITDA' && ys[i] === 2023 ? ' e' : ''),
+    onClick: i => goYear(ys[i])});
+  legend('l-vbar', lg); $('r-vbar').innerHTML = read;
+}
+
+/* ================= 2. Torta ================= */
+function pie(){
+  const el = $('c-pie'); const y = S.year, sl = pieSlices(y, S.pie);
+  if (!sl) { el.innerHTML = ''; legend('l-pie', []); empty('e-pie', `2023 no trae el detalle de gastos operativos.<br><button onclick="S.pie='total';setModes('m-pie','total');pie()">Ver toda la venta</button>`); $('r-pie').innerHTML = ''; return; }
+  empty('e-pie'); if (!el.clientWidth) return;
+  const tot = sl.reduce((a, b) => a + b[1], 0), base = S.pie === 'total' ? v('ventas', y) : tot;
+  const prevSl = Y.includes(y - 1) ? pieSlices(y - 1, S.pie) : null;
+  const prevBase = prevSl ? (S.pie === 'total' ? v('ventas', y - 1) : prevSl.reduce((a, b) => a + b[1], 0)) : null;
+  const cmap = {'Costo de ventas': COL.medio, 'Gastos administrativos': COL.azul, 'Gastos de venta': COL.lila, 'Gastos de venta y distribución': COL.lila, 'Otros operativos netos': COL.gris, 'Otros gastos operativos netos': COL.gris, 'Gastos operativos (agregado)': COL.azul, 'Resultado financiero neto': COL.rojo, 'Impuesto de renta': COL.ambar, 'Utilidad neta': COL.verde};
+  const slices = sl.map(([l, val]) => { const p = prevSl ? prevSl.find(q => q[0] === l) : null;
+    return {l, v: val, color: cmap[l] || COL.gris, tip: TT(`${l} (${y})`, [['Valor', mm(val)], [S.pie === 'total' ? '% de las ventas netas' : '% del gasto operativo', pct(val / base)], S.pie === 'total' ? ['De cada $100 vendidos', '$' + nf1.format(100 * val / base)] : null, p ? [String(y - 1), pct(p[1] / prevBase) + ' (' + spp(val / base - p[1] / prevBase) + ')'] : null, p ? ['Variación en valor', spct(chg(val, p[1]))] : null])}; });
+  pieChart(el, {slices, base, labelFmt: f => pct(f)});
+  legend('l-pie', slices.map(s => ({name: `${s.l} ${pct(s.v / base)}`, color: s.color})));
+  $('r-pie').innerHTML = S.pie === 'total'
+    ? `De cada <b>$100</b> vendidos en ${y}, <b>$${nf1.format(100 * v('cogs', y) / v('ventas', y))}</b> se van en costo de ventas y quedan <b>$${nf1.format(100 * v('un', y) / v('ventas', y))}</b> de utilidad neta.`
+    : `Los gastos administrativos son el <b>${pct(v('g_admin', y) / tot)}</b> del gasto operativo y equivalen al <b>${pct(v('g_admin', y) / v('ventas', y))}</b> de las ventas.`;
+}
+
+/* ================= 3. Cascada ================= */
+function wf(){
+  const el = $('c-wf'); const y = S.year;
+  if (S.wf === 'bridge' && !Y.includes(y - 1)) { el.innerHTML = ''; empty('e-wf', `No hay año anterior a ${y} en el archivo.<br><button onclick="goYear(2025)">Ver 2025</button>`); $('r-wf').innerHTML = ''; return; }
+  empty('e-wf'); if (!el.clientWidth) return;
+  const st = S.wf === 'pyg' ? wfSteps(y) : bridgeSteps(y); const sales = v('ventas', y);
+  let run = 0; const steps = [];
+  st.forEach((s, i) => {
+    let a, b, color, tot = false, val;
+    if (s.t === 'total' && i === 0) { a = 0; b = s.v; run = b; color = COL.azul; tot = true; val = b; }
+    else if (s.t) { val = (s.t === 'total' && isN(s.v)) ? s.v : run; a = 0; b = val; run = val; color = s.t === 'total' ? COL.azul : COL.medio; tot = true; }
+    else { val = s.v; a = run; b = run + s.v; run = b; color = s.v >= 0 ? COL.verde : COL.rojo; }
+    const rows = [];
+    if (tot) rows.push(['Valor', mm(val)]); else rows.push(['Impacto', mms(val)], ['Acumulado tras el paso', mm(b)]);
+    if (S.wf === 'pyg') { rows.push(['Sobre ventas netas', pct(Math.abs(val) / sales)]);
+      if (s.l === 'EBIT') rows.push(['EBITDA', isN(v('ebitda', y)) ? mm(v('ebitda', y)) : (y === 2023 ? mm(EST.ebitda2023) + ' (est.)' : 'n.d.')], ['Margen EBIT', pct(rt('m_ebit', y))]);
+      if (s.l === 'Resultado financiero' && isN(v('gas_fin', y))) rows.push(['Gastos financieros', mm(-v('gas_fin', y))], ['Ingresos financieros', mm(v('ing_fin', y))], ['Participación asociadas', mm(v('asoc', y))]);
+      if (s.l === 'Impuestos') rows.push(['Tasa efectiva', pct(rt('tasa_imp', y))]);
+      if (s.l === 'Utilidad neta') rows.push(['Margen neto', pct(rt('m_neto', y))]);
+    } else if (!tot) rows.push(val >= 0 ? 'Suma a la utilidad' : 'Resta a la utilidad');
+    steps.push({l: s.l, a, b, color, lbl: tot ? nf0.format(val) : (val >= 0 ? '+' : '−') + nf0.format(Math.abs(val)), tip: TT(`${s.l} (${S.wf === 'pyg' ? y : (y - 1) + ' → ' + y})`, rows)});
+  });
+  waterfallChart(el, {steps, zero: S.wf === 'pyg'});
+  legend('l-wf', [{name: 'Total / subtotal', color: COL.azul}, {name: 'Suma', color: COL.verde}, {name: 'Resta', color: COL.rojo}]);
+  if (S.wf === 'pyg') $('r-wf').innerHTML = `En ${y} el margen neto fue <b>${pct(rt('m_neto', y))}</b>: de ${mm(sales)} vendidos quedaron <b>${mm(v('un', y))}</b>. El mayor consumo es el costo de ventas (<b>${pct(v('cogs', y) / sales)}</b>), seguido por ${hasDetail(y) ? 'los gastos administrativos (' + pct(v('g_admin', y) / sales) + ')' : 'los gastos operativos agregados (' + pct(v('opex_total', y) / sales) + ')'}.`;
+  else { const d = st.filter(s => !s.t).sort((a, b) => b.v - a.v); $('r-wf').innerHTML = `La utilidad neta pasó de ${mm(v('un', y - 1))} a <b>${mm(v('un', y))}</b> (${spct(chg(v('un', y), v('un', y - 1)))}). Mayor impulso: <b>${d[0].l.toLowerCase()}</b> (${mms(d[0].v)}); mayor freno: <b>${d[d.length - 1].l.toLowerCase()}</b> (${mms(d[d.length - 1].v)}).`; }
+}
+
+/* ================= 4. Dona ================= */
+function donut(){
+  const el = $('c-donut'); if (!el.clientWidth) return;
+  const y = S.year, o = donutSlices(y, S.donut), prev = Y.includes(y - 1) ? donutSlices(y - 1, S.donut) : null;
+  const cmap = {'Patrimonio': COL.verde, 'Deuda financiera largo plazo': COL.azul, 'Deuda financiera corto plazo': COL.rojo, 'Proveedores y cuentas por pagar': COL.ambar, 'Otros pasivos': COL.gris, 'Pasivo no corriente': COL.azul, 'Pasivo corriente': COL.rojo,
+    'Propiedad, planta y equipo': COL.azul, 'Inversiones en subsidiarias': COL.medio, 'Intangibles': COL.lila, 'Otros no corrientes': COL.gris, 'Inventarios': COL.ambar, 'Cuentas por cobrar': COL.turq, 'Efectivo': COL.verde, 'Otros corrientes': '#B9C6DA', 'Activo no corriente': COL.azul, 'Activo corriente': COL.turq};
+  const slices = o.s.map(([l, val]) => { const p = prev ? prev.s.find(q => q[0] === l) : null; const rows = [['Valor', mm(val)], ['Participación', pct(val / o.tot)], p ? [String(y - 1), mm(p[1]) + ' (' + spct(chg(val, p[1])) + ')'] : null];
+    if (l.startsWith('Deuda financiera')) rows.push(['Deuda neta total', mm(rt('deuda_neta', y))], ['Deuda neta / EBITDA', xx(rt('dn_ebitda', y))]);
+    if (l === 'Patrimonio') rows.push(['Pasivo / Patrimonio', xx(rt('pas_pat', y))]);
+    if (['Efectivo', 'Inventarios', 'Cuentas por cobrar', 'Activo corriente'].includes(l)) rows.push(['Razón corriente', xx(rt('rc', y))]);
+    if (o.agg) rows.push('2023 sin detalle de rubros en EMIS');
+    return {l, v: val, color: cmap[l] || COL.gris, tip: TT(`${l} (${y})`, rows)}; });
+  pieChart(el, {slices, donut: true, minLabel: 0.06, labelFmt: f => pct(f), center: {top: S.donut === 'fin' ? 'Pasivo + patrimonio' : 'Activo total', big: '$' + nf0.format(o.tot) + ' M', small: S.donut === 'fin' ? 'Pasivo/Activo ' + pct(rt('endeud', y)) : String(y)}});
+  legend('l-donut', slices.map(s => ({name: `${s.l} ${pct(s.v / o.tot)}`, color: s.color})));
+  $('r-donut').innerHTML = S.donut === 'fin'
+    ? `Por cada $100 de activos, <b>$${nf1.format(100 * v('patrimonio', y) / o.tot)}</b> son de los accionistas y <b>$${nf1.format(100 * v('pasivo', y) / o.tot)}</b> de terceros${o.agg ? ' (2023 sin detalle)' : '; la deuda financiera pesa ' + pct((v('deuda_lp', y) + v('deuda_cp', y)) / o.tot)}.`
+    : (o.agg ? `2023 solo reporta totales: el activo corriente es el <b>${pct(v('act_c', y) / o.tot)}</b> del total.` : `PP&amp;E e inversiones en subsidiarias suman el <b>${pct((v('ppe', y) + v('inv_sub', y)) / o.tot)}</b> del activo; el efectivo, <b>${pct(v('caja', y) / o.tot)}</b>.`);
+}
+
+/* ================= 5. Burbujas ================= */
+function bub(){
+  const el = $('c-bub'); if (!el.clientWidth) return;
+  const m = S.bub; const cfg = {
+    dn: {x: y => isN(v('ebitda', y)) ? v('ebitda', y) / v('ventas', y) : null, y: y => rt('dn_ebitda', y), xl: 'Margen EBITDA', yl: 'Deuda neta / EBITDA (veces)', xf: x => nf1.format(x * 100) + ' %', yf: x => nf1.format(x) + 'x', tf: pct, tyf: xx, refY: 2.5, q: ['Menos margen, más deuda', 'Más margen, más deuda', 'Menos margen, menos deuda', 'Zona ideal']},
+    ebit: {x: y => rt('m_ebit', y), y: y => rt('endeud', y), xl: 'Margen EBIT', yl: 'Pasivo / Activo', xf: x => nf1.format(x * 100) + ' %', yf: x => nf1.format(x * 100) + ' %', tf: pct, tyf: pct, refY: 0.85, q: ['Menos margen, más pasivo', 'Más margen, más pasivo', 'Menos margen, menos pasivo', 'Zona ideal']},
+    roa: {x: y => rt('roa', y), y: y => rt('rc', y), xl: 'ROA (utilidad / activo)', yl: 'Razón corriente (veces)', xf: x => nf1.format(x * 100) + ' %', yf: x => nf2.format(x) + 'x', tf: pct, tyf: xx, refY: 1, q: ['Líquida, poco rentable', 'Rentable y líquida', 'Ilíquida, poco rentable', 'Zona ideal: subir liquidez']}
+  }[m];
+  const ys = Y.filter(y => isN(cfg.x(y)) && isN(cfg.y(y)));
+  const smax = Math.max(...Y.map(y => v('ventas', y))), smin = Math.min(...Y.map(y => v('ventas', y)));
+  const xm = ys.reduce((a, y) => a + cfg.x(y), 0) / ys.length;
+  const shade = {2021: '#9CC0EB', 2022: '#6FA1E0', 2023: '#3F7FD2', 2024: '#1F5FC4', 2025: COL.azul};
+  const points = ys.map(y => ({x: cfg.x(y), y: cfg.y(y), r: 14 + 18 * ((v('ventas', y) - smin) / (smax - smin)), label: String(y), color: shade[y], sel: y === S.year,
+    tip: TT('Año ' + y, [[cfg.xl, cfg.tf(cfg.x(y))], [cfg.yl, cfg.tyf(cfg.y(y))], ['Ventas netas (tamaño)', mm(v('ventas', y))], ['EBITDA', isN(v('ebitda', y)) ? mm(v('ebitda', y)) : (y === 2023 ? mm(EST.ebitda2023) + ' (est.)' : 'n.d.')], ['Utilidad neta', mm(v('un', y))], ['Deuda neta', mm(rt('deuda_neta', y))], ['Patrimonio', mm(v('patrimonio', y))]], 'Línea vertical: promedio. Clic para elegir el año')}));
+  bubbleChart(el, {points, xf: cfg.xf, yf: cfg.yf, xl: cfg.xl, yl: cfg.yl, refX: xm, refY: cfg.refY, q: cfg.q, onClick: i => goYear(ys[i])});
+  const y = S.year, has = ys.includes(y);
+  $('r-bub').innerHTML = (has ? `<b>${y}</b>: ${cfg.xl} de <b>${cfg.tf(cfg.x(y))}</b> y ${cfg.yl} de <b>${cfg.tyf(cfg.y(y))}</b>.` : `${y} no tiene datos para este plano.`) + (m === 'dn' ? ' 2025 es el año más rentable y menos apalancado por flujo. Solo 2021, 2024 y 2025 reportan EBITDA y deuda completos.' : m === 'ebit' ? ' El margen sube, pero el pasivo sigue por encima del 85 % del activo.' : ' La razón corriente se mantiene por debajo de 1x todo el periodo.');
+}
+
+/* ================= 6. Barras horizontales ================= */
+function hbar(){
+  const el = $('c-hbar'), m = S.hbar, r = $('r-hbar'); empty('e-hbar');
+  if (m === 'caja') {
+    const y = S.year;
+    if (!isN(v('cfo', y))) { el.innerHTML = ''; legend('l-hbar', []); empty('e-hbar', `EMIS no reporta flujo de efectivo para ${y}.<br><span style="display:flex;gap:8px"><button onclick="goYear(2025)">Ver 2025</button><button onclick="goYear(2024)">Ver 2024</button><button onclick="goYear(2021)">Ver 2021</button></span>`); r.innerHTML = ''; return; }
+    if (!el.clientWidth) return;
+    const it = [['Flujo de caja operativo', v('cfo', y)], ['Compra de PP&E (capex)', -v('capex', y)], ['Dividendos pagados', -v('divid', y)], ['Intereses pagados', -v('int_pag', y)], ['Pagos de arrendamientos', -v('arrend', y)], ['Préstamos netos', v('prest_in', y) - v('prest_out', y)]];
+    if (v('adq', y)) it.push(['Adquisición de subsidiarias', -v('adq', y)]);
+    const known = it.reduce((a, b) => a + b[1], 0); it.push(['Otros flujos', v('var_caja', y) - known]); it.push(['Variación neta de caja', v('var_caja', y)]);
+    hbarChart(el, {labels: it.map(i => i[0]), room: 0.42, series: [{name: 'Flujo', data: it.map(i => i[1]), colors: it.map((i, k) => k === it.length - 1 ? COL.azul : (i[1] >= 0 ? COL.verde : COL.rojo))}],
+      labelFmt: x => (x < 0 ? '−' : '') + '$' + nf0.format(Math.abs(x)) + ' M',
+      tip: (si, i) => { const [l, x] = it[i]; const rows = [['Valor', mms(x)], ['Sobre flujo operativo', pct(Math.abs(x) / v('cfo', y))]];
+        if (l.startsWith('Flujo')) rows.push(['Flujo libre (CFO − capex)', mm(rt('fcf', y))], ['CFO / EBITDA', isN(v('ebitda', y)) ? pct(v('cfo', y) / v('ebitda', y)) : 'n.d.']);
+        if (l.startsWith('Préstamos')) rows.push(['Tomados', mm(v('prest_in', y))], ['Pagados', mm(v('prest_out', y))]);
+        if (l.startsWith('Variación')) rows.push(['Caja final', mm(v('caja', y))]);
+        return TT(`${l} (${y})`, rows); }});
+    legend('l-hbar', [{name: 'Entrada de caja', color: COL.verde}, {name: 'Salida de caja', color: COL.rojo}, {name: 'Variación neta', color: COL.azul}]);
+    r.innerHTML = `En <b>${y}</b> la operación generó <b>${mm(v('cfo', y))}</b>; tras capex quedaron <b>${mm(rt('fcf', y))}</b> de flujo libre para dividendos, intereses y deuda.`;
+    return;
+  }
+  if (!el.clientWidth) return;
+  const ys = years().filter(y => isN(v('gas_fin', y))).reverse();
+  if (m === 'cob') {
+    const defs = [['EBITDA', y => v('ebitda', y), COL.azul], ['EBIT', y => v('ebit', y), COL.medio], ['Gastos financieros', y => v('gas_fin', y), COL.rojo]];
+    hbarChart(el, {labels: ys.map(String), sel: String(S.year), series: defs.map(([nm, f, c]) => ({name: nm, data: ys.map(f), color: c})),
+      labelFmt: x => '$' + nf0.format(x) + ' M', onClick: i => goYear(ys[i]),
+      tip: (si, i) => { const y = ys[i]; return TT(`${defs[si][0]} ${y}`, [['Valor', mm(defs[si][1](y))], ['Cobertura EBITDA / gastos fin.', xx(rt('cobert', y))], ['Cobertura EBIT / gastos fin.', xx(rt('cob_ebit', y))], ['Intereses pagados en caja', mm(v('int_pag', y))]], 'Clic para analizar ' + y); }});
+    legend('l-hbar', defs.map(d => ({name: d[0], color: d[2]})));
+    const y = ys.includes(S.year) ? S.year : 2025;
+    r.innerHTML = `En <b>${y}</b> el EBITDA cubrió <b>${xx(rt('cobert', y))}</b> los gastos financieros y el EBIT <b>${xx(rt('cob_ebit', y))}</b>. 2022 sin EBITDA y 2023 sin gastos financieros reportados.`;
+  } else {
+    const yd = ys.filter(y => isN(v('deuda_lp', y)));
+    hbarChart(el, {labels: yd.map(String), sel: String(S.year), room: 0.38, series: [
+        {name: 'Deuda largo plazo', data: yd.map(y => v('deuda_lp', y)), color: COL.azul, stack: 'd'},
+        {name: 'Deuda corto plazo', data: yd.map(y => v('deuda_cp', y)), color: COL.rojo, stack: 'd'},
+        {name: 'Efectivo', data: yd.map(y => v('caja', y)), color: COL.verde, stack: 'c'}],
+      labelFmt: x => '$' + nf0.format(x) + ' M', totalFmt: t => 'Deuda $' + nf0.format(t) + ' M', onClick: i => goYear(yd[i]),
+      tip: (si, i) => { const y = yd[i], nm = ['Deuda largo plazo', 'Deuda corto plazo', 'Efectivo'][si], val = [v('deuda_lp', y), v('deuda_cp', y), v('caja', y)][si];
+        return TT(`${nm} ${y}`, [['Valor', mm(val)], ['Deuda financiera total', mm(rt('deuda_tot', y))], ['Deuda neta', mm(rt('deuda_neta', y))], ['Deuda neta / EBITDA', xx(rt('dn_ebitda', y))], ['Corto plazo / deuda', pct(v('deuda_cp', y) / rt('deuda_tot', y))]], 'Clic para analizar ' + y); }});
+    legend('l-hbar', [{name: 'Deuda largo plazo', color: COL.azul}, {name: 'Deuda corto plazo', color: COL.rojo}, {name: 'Efectivo', color: COL.verde}]);
+    r.innerHTML = `La deuda neta bajó de ${mm(rt('deuda_neta', 2024))} a <b>${mm(rt('deuda_neta', 2025))}</b> en 2025, pero la porción de corto plazo subió a <b>${pct(v('deuda_cp', 2025) / rt('deuda_tot', 2025))}</b>. 2023 sin detalle de deuda.`;
+  }
+}
+
+/* ---------- Tables ---------- */
+const ROWS = [
+  ['sec','Estado de resultados'],
+  ['Ingresos operacionales totales',y=>v('ing_total',y),'mm'],['Ventas netas',y=>v('ventas',y),'mm','key'],['Costo de ventas',y=>-v('cogs',y),'mm'],['Utilidad bruta',y=>v('bruta',y),'mm','key'],
+  ['Gastos de venta y distribución',y=>isN(v('g_venta',y))?-v('g_venta',y):null,'mm'],['Gastos administrativos',y=>isN(v('g_admin',y))?-v('g_admin',y):null,'mm'],['Otros resultados operativos netos',y=>isN(v('otros_net',y))?-v('otros_net',y):null,'mm'],
+  ['EBIT (ganancia operativa)',y=>v('ebit',y),'mm','key'],['Depreciación y amortización',y=>v('da',y),'mm'],['EBITDA',y=>ebitda(y),'mm','key'],
+  ['Gastos financieros',y=>isN(v('gas_fin',y))?-v('gas_fin',y):null,'mm'],['Participación en asociadas',y=>v('asoc',y),'mm'],['Resultado financiero neto',y=>v('res_fin',y),'mm'],
+  ['Utilidad antes de impuestos',y=>v('ebt',y),'mm'],['Impuesto de renta',y=>-v('imp',y),'mm'],['Utilidad neta',y=>v('un',y),'mm','key'],
+  ['sec','Balance general'],
+  ['Activos totales',y=>v('activo',y),'mm','key'],['Activo corriente',y=>v('act_c',y),'mm'],['Efectivo',y=>v('caja',y),'mm'],['Cuentas comerciales por cobrar',y=>v('cxc_com',y),'mm'],['Inventarios',y=>v('invent',y),'mm'],
+  ['Propiedad, planta y equipo',y=>v('ppe',y),'mm'],['Inversiones en subsidiarias',y=>v('inv_sub',y),'mm'],
+  ['Pasivos totales',y=>v('pasivo',y),'mm','key'],['Pasivo corriente',y=>v('pas_c',y),'mm'],['Deuda financiera corto plazo',y=>v('deuda_cp',y),'mm'],['Deuda financiera largo plazo',y=>v('deuda_lp',y),'mm'],['Proveedores y cuentas por pagar',y=>v('proveed',y),'mm'],['Patrimonio',y=>v('patrimonio',y),'mm','key'],
+  ['sec','Flujo de efectivo'],
+  ['Flujo operativo (CFO)',y=>v('cfo',y),'mm','key'],['Capex',y=>isN(v('capex',y))?-v('capex',y):null,'mm'],['Flujo de caja libre',y=>rt('fcf',y),'mm','key'],['Dividendos pagados',y=>isN(v('divid',y))?-v('divid',y):null,'mm'],['Intereses pagados',y=>isN(v('int_pag',y))?-v('int_pag',y):null,'mm'],['Variación neta de caja',y=>v('var_caja',y),'mm'],
+  ['sec','Indicadores'],
+  ['Margen bruto',y=>rt('m_bruto',y),'pct'],['Margen EBITDA',y=>isN(ebitda(y))?ebitda(y)/v('ventas',y):null,'pct','key'],['Margen EBIT',y=>rt('m_ebit',y),'pct'],['Margen neto',y=>rt('m_neto',y),'pct','key'],
+  ['Deuda neta',y=>rt('deuda_neta',y),'mm'],['Deuda neta / EBITDA',y=>rt('dn_ebitda',y),'x','key'],['Cobertura EBITDA / gastos financieros',y=>rt('cobert',y),'x','key'],
+  ['Pasivo / Activo',y=>rt('endeud',y),'pct','key'],['Pasivo / Patrimonio',y=>rt('pas_pat',y),'x'],['Razón corriente',y=>rt('rc',y),'x'],['Capital de trabajo',y=>rt('kt',y),'mm'],
+  ['ROA',y=>rt('roa',y),'pct'],['ROE',y=>rt('roe',y),'pct'],['Tasa efectiva de impuestos',y=>rt('tasa_imp',y),'pct'],
+  ['Días de cartera',y=>rt('dso',y),'d'],['Días de inventario',y=>rt('dio',y),'d'],['Días de proveedores',y=>rt('dpo',y),'d']
+];
+const fmtT = (x,t,y,lbl) => { if(!isN(x)) return 'n.d.'; const e = (lbl.includes('EBITDA') && y===2023) ? ' (e)' : '';
+  return (t==='mm'?nf0.format(x):t==='pct'?pct(x):t==='x'?xx(x):nf0.format(x)) + e; };
+const fmtV = (a,b,t) => { if(!isN(a)||!isN(b)) return 'n.d.'; if(t==='pct') return spp(a-b); if(t==='x') return sx(a-b); if(t==='d') return (a-b>=0?'+':'−')+nf0.format(Math.abs(a-b))+' días'; return spct(chg(a,b)); };
+function renderTable(){
+  const ys = S.tbl===3 ? [2023,2024,2025] : Y.slice();
+  let h = `<thead><tr><th>Rubro (millones COP)</th>${ys.map(y=>`<th class="${y>=2023?'focus':''}">${y}</th>`).join('')}<th>Var. 2024–25</th><th>Var. 2023–25</th></tr></thead><tbody>`;
+  ROWS.forEach(r=>{
+    if(r[0]==='sec'){ h += `<tr class="sec"><td colspan="${ys.length+3}">${r[1]}</td></tr>`; return; }
+    const [l,f,t,k]=r;
+    h += `<tr class="${k||''}"><td>${l}</td>${ys.map(y=>{const x=f(y); return `<td class="${y>=2023?'focus ':''}${isN(x)?'':'nd'}">${fmtT(x,t,y,l)}</td>`;}).join('')}<td>${fmtV(f(2025),f(2024),t)}</td><td>${fmtV(f(2025),f(2023),t)}</td></tr>`;
+  });
+  document.getElementById('sumTable').innerHTML = h + '</tbody>';
+}
+function renderVarTable(){
+  const rows=[['Ventas netas',y=>v('ventas',y),'mm'],['Utilidad bruta',y=>v('bruta',y),'mm'],['EBIT',y=>v('ebit',y),'mm'],['EBITDA',y=>ebitda(y),'mm'],['Utilidad neta',y=>v('un',y),'mm'],
+    ['Margen bruto',y=>rt('m_bruto',y),'pct'],['Margen EBITDA',y=>isN(ebitda(y))?ebitda(y)/v('ventas',y):null,'pct'],['Margen neto',y=>rt('m_neto',y),'pct'],
+    ['Gastos financieros',y=>v('gas_fin',y),'mm'],['Participación en asociadas',y=>v('asoc',y),'mm'],['Deuda neta',y=>rt('deuda_neta',y),'mm'],['Deuda neta / EBITDA',y=>rt('dn_ebitda',y),'x'],['Pasivo / Activo',y=>rt('endeud',y),'pct'],['Patrimonio',y=>v('patrimonio',y),'mm'],['Flujo operativo',y=>v('cfo',y),'mm']];
+  let h=`<thead><tr><th>Indicador</th><th>2023</th><th>2024</th><th>2025</th><th>Var. 2023–24</th><th>Var. 2024–25</th><th>Lectura</th></tr></thead><tbody>`;
+  rows.forEach(([l,f,t])=>{ const a=f(2023),b=f(2024),c=f(2025); const dv = isN(c)&&isN(b) ? (t==='mm'?chg(c,b):c-b) : null;
+    const goodUp = !['Gastos financieros','Deuda neta','Deuda neta / EBITDA','Pasivo / Activo'].includes(l);
+    const cls = !isN(dv)?'na':((dv>0)===goodUp?'ok':'bad');
+    h+=`<tr><td>${l}</td><td class="${isN(a)?'':'nd'}">${fmtT(a,t,2023,l)}</td><td>${fmtT(b,t,2024,l)}</td><td>${fmtT(c,t,2025,l)}</td><td>${fmtV(b,a,t)}</td><td>${fmtV(c,b,t)}</td><td><span class="light ${cls}">${cls==='ok'?'Mejora':cls==='bad'?'Deterioro':'Sin base'}</span></td></tr>`; });
+  document.getElementById('varTable').innerHTML=h+'</tbody>';
+}
+function csv(){
+  const ys=Y; let out=['Rubro;'+ys.join(';')];
+  ROWS.forEach(r=>{ if(r[0]==='sec'){ out.push(r[1]); return; } out.push(r[0]+';'+ys.map(y=>{const x=r[1](y); return isN(x)?(r[2]==='pct'?(x*100).toFixed(2)+'%':r[2]==='x'?x.toFixed(2):Math.round(x)):'n.d.';}).join(';')); });
+  const blob=new Blob(['\ufeff'+out.join('\n')],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='alpina_resumen_emis.csv'; document.body.appendChild(a); a.click(); a.remove();
+}
+
+
+
+/* ================= Interacción general ================= */
+function setModes(id, val){ document.querySelectorAll('#' + id + ' button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === val))); }
+function bindModes(id, key, fn){ document.querySelectorAll('#' + id + ' button').forEach(b => b.onclick = () => { S[key] = b.dataset.m; setModes(id, S[key]); hideTip(); fn(); }); }
+function renderYearSeg(){
+  const seg = $('yearSeg');
+  seg.innerHTML = Y.map(y => `<button data-y="${y}" aria-pressed="${y === S.year}">${y}</button>`).join('');
+  seg.querySelectorAll('button').forEach(b => b.onclick = () => goYear(+b.dataset.y));
+}
+function safe(fn){ try { fn(); } catch (e) { console.error(e); } }
+function refresh(){
+  hideTip(); renderYearSeg(); safe(renderKPIs); safe(renderDQ);
+  [vbar, pie, wf, donut, bub, hbar].forEach(safe);
+}
+function download(){
+  const blob = new Blob([SRC], {type: 'text/html;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Dashboard_Alpina_EBITDA_Solvencia.html';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function renderDQ(){
+  const y = S.year, b = $('dqBox'); let m = '';
+  if (y === 2023) m = '<b>2023 tiene información parcial.</b> Proviene de la Cámara de Comercio de Bogotá y no está auditado: no trae EBITDA, detalle de gastos, balance detallado ni flujo de efectivo, y reporta impuesto de renta en cero. El EBITDA mostrado es un estimado (EBIT + depreciación promedio).';
+  else if (y === 2022) m = '<b>2022 no reporta EBITDA ni flujo de efectivo en EMIS.</b> Los indicadores que dependen de ellos aparecen como n.d.';
+  b.hidden = !m; b.innerHTML = m ? `<div>${m}</div>` : '';
+}
+function init(){
+  document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('nav.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+    document.querySelectorAll('section.tab').forEach(s => s.hidden = s.id !== b.dataset.tab);
+    hideTip(); window.scrollTo({top: 0}); if (b.dataset.tab === 't-dash') refresh();
+  });
+  document.querySelectorAll('#rangeSeg button').forEach(b => b.onclick = () => { S.range = +b.dataset.r; document.querySelectorAll('#rangeSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); refresh(); });
+  document.querySelectorAll('#tblSeg button').forEach(b => b.onclick = () => { S.tbl = +b.dataset.r; document.querySelectorAll('#tblSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderTable(); });
+  $('helpClose').onclick = () => $('helpBox').hidden = true;
+  $('csvBtn').onclick = csv; $('dlBtn').onclick = download;
+  $('chkMargin').onchange = e => { S.margin = e.target.checked; vbar(); };
+  bindModes('m-vbar', 'vbar', vbar); bindModes('m-pie', 'pie', pie); bindModes('m-wf', 'wf', wf); bindModes('m-donut', 'donut', donut); bindModes('m-bub', 'bub', bub); bindModes('m-hbar', 'hbar', hbar);
+  safe(renderTable); safe(renderVarTable); refresh();
+  let to; window.addEventListener('resize', () => { clearTimeout(to); to = setTimeout(refresh, 150); });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+</script>
+</body>
+</html>
